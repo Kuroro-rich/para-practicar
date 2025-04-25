@@ -1,0 +1,144 @@
+/* Estilos generales */
+body {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+  
+  /* Estilos para las pestañas */
+  .tabs.is-boxed li.is-active a {
+    background-color: #3273dc;
+    color: white;
+    border-color: #3273dc;
+  }
+  
+  /* Encabezados de secciones */
+  .header-section {
+    background-color: #333;
+    color: white;
+    padding: 8px 10px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 15px;
+  }
+  
+  /* Subsecciones */
+  .sub-header {
+    background-color: #666;
+    color: white;
+    padding: 5px 10px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+  }
+  
+  /* Campos requeridos */
+  .required::before {
+    content: "(*)";
+    color: red;
+    margin-right: 5px;
+    font-weight: bold;
+  }
+  
+  /* Fondo amarillo para secciones importantes */
+  .yellow-bg {
+    background-color: #ffffcc;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  /* Fondo gris para secciones secundarias */
+  .gray-bg {
+    background-color: #f2f2f2;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  /* Separadores */
+  .divider {
+    border-bottom: 1px solid #ddd;
+    margin: 15px 0;
+  }
+  
+  /* Estilos para los botones */
+  .button.is-primary {
+    background-color: #1c4587;
+  }
+  
+  .button.is-primary:hover {
+    background-color: #0f2a56;
+  }
+  
+  .button.is-success {
+    background-color: #287c2b;
+  }
+  
+  .button.is-info {
+    background-color: #4a86e8;
+  }
+  
+  /* Estilos para tablas en los formularios */
+  .formulario-tabla {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .formulario-tabla td {
+    padding: 8px;
+    border: 1px solid #ddd;
+  }
+  
+  .formulario-tabla tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  /* Estilo para campos de solo lectura */
+  .input:read-only {
+    background-color: #f5f5f5;
+  }
+  
+  /* Mejoras para la visualización en móviles */
+  @media screen and (max-width: 768px) {
+    .columns.is-multiline > .column {
+      padding: 0.5rem;
+    }
+    
+    .header-section {
+      font-size: 14px;
+      padding: 5px;
+    }
+    
+    .label {
+      font-size: 14px;
+    }
+  }
+  
+  /* Estilos para documentos */
+  .documents-section {
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 15px;
+  }
+  
+  /* Estilos para mensajes de confirmación */
+  .notification {
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .notification.is-success {
+    background-color: #ebffeb;
+    color: #287c2b;
+  }
+  
+  .notification.is-danger {
+    background-color: #ffebeb;
+    color: #cc0000;
+  }
+  
+  /* Estilo para campos deshabilitados */
+  .input:disabled, 
+  .textarea:disabled, 
+  .select select:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }

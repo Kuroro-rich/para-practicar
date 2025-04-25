@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listado de Alumnos</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="/css/listar.css">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+</head>
+
+<body>
+  <section class="section">
+    <div class="container">
+      <h1 class="title">Listado de Alumnos</h1>
+
+      <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+          <li><a href="/">Inicio</a></li>
+          <li class="is-active"><a href="#" aria-current="page">Listado de Alumnos</a></li>
+        </ul>
+      </nav>
+
+      <!-- Mensaje de éxito (inicialmente oculto) -->
+      <div id="successMessage" class="notification is-success is-light mb-4" style="display: none;">
+        <button class="delete"></button>
+        Operación realizada con éxito.
+      </div>
+
+      <!-- Enlace de navegación -->
+      <div class="field mb-4">
+        <a href="/" class="button is-info">
+          <span class="icon">
+            <i class="fas fa-home"></i>
+          </span>
+          <span>Volver al inicio</span>
+        </a>
+      </div>
+
+      <!-- Formulario para seleccionar el año y buscar -->
+      <form id="filterForm" class="box">
+        <div class="columns is-vcentered">
+          <div class="column is-3">
+            <label class="label">Año Académico</label>
+            <div class="control has-icons-left">
+              <div class="select is-fullwidth">
+                <select id="yearSelect" name="id_ano" required>
+                  <option value="">-- Seleccione un año --</option>
+                </select>
+              </div>
+              <span class="icon is-small is-left">
+                <i class="fas fa-calendar-alt"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="column is-3">
+            <label class="label">Buscar por Nombre</label>
+            <div class="control has-icons-left">
+              <input class="input" type="text" id="searchNombre" placeholder="Apellido o nombre...">
+              <span class="icon is-small is-left">
+                <i class="fas fa-user"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="column is-3">
+            <label class="label">Buscar por Curso</label>
+            <div class="control has-icons-left">
+              <div class="select is-fullwidth">
+                <select id="searchCurso">
+                  <option value="">-- Todos los cursos --</option>
+                  <!-- Los cursos se cargarán dinámicamente -->
+                </select>
+              </div>
+              <span class="icon is-small is-left">
+                <i class="fas fa-chalkboard"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="column is-3">
+            <label class="label">&nbsp;</label>
+            <div class="control">
+              <button type="submit" class="button is-primary is-fullwidth">
+                <span class="icon">
+                  <i class="fas fa-search"></i>
+                </span>
+                <span>Buscar</span>
+              </button>
+            </div>
+          </div>
+        </div> <!-- Cierre de columns -->
+      </form>
+
+
+
+      <!-- Indicador de carga (inicialmente oculto) -->
+      <div id="loadingIndicator" class="has-text-centered my-5" style="display: none;">
+        <span class="icon is-large">
+          <i class="fas fa-spinner fa-pulse fa-2x"></i>
+        </span>
+        <p>Cargando datos...</p>
+      </div>
+
+      <!-- Contenedor de resultados -->
+      <div id="resultsContainer" class="mt-5">
+        <h2 class="subtitle">Resultados</h2>
+        <div class="is-flex is-justify-content-space-between mb-3">
+          <p id="resultsCount" class="has-text-grey">0 alumnos encontrados</p>
+          <div class="field has-addons">
+            <div class="control">
+              <button id="exportExcel" class="button is-small is-success">
+                <span class="icon is-small">
+                  <i class="fas fa-file-excel"></i>
+                </span>
+                <span>Exportar a Excel</span>
+              </button>
+            </div>
+            <div class="control">
+              <button id="printList" class="button is-small is-link">
+                <span class="icon is-small">
+                  <i class="fas fa-print"></i>
+                </span>
+                <span>Imprimir</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla para mostrar los alumnos -->
+        <div class="table-container">
+          <table class="table is-striped is-hoverable is-fullwidth">
+            <thead>
+              <tr>
+                <th>RUT</th>
+                <th>Nombre Completo</th>
+                <th>Curso</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usuariosTable">
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <nav class="pagination is-centered mt-5" role="navigation" aria-label="pagination">
+          <a class="pagination-previous" id="prevPage">Anterior</a>
+          <a class="pagination-next" id="nextPage">Siguiente</a>
+          <ul class="pagination-list" id="paginationNumbers">
+            <!-- Números de página se generarán dinámicamente -->
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+  <script>
+    // Función para mostrar mensajes
+    function mostrarMensaje(texto, tipo) {
+      const mensaje = document.getElementById('successMessage');
+      mensaje.className = `notification is-${tipo} is-light mb-4`;
+      mensaje.innerHTML = `<button class="delete"></button>${texto}`;
+      mensaje.style.display = 'block';
+
+      // Ocultar después de 5 segundos
+      setTimeout(() => {
+        mensaje.style.display = 'none';
+      }, 5000);
+
+      // Configurar el botón de cierre nuevamente
+      mensaje.querySelector('.delete').addEventListener('click', function () {
+        mensaje.style.display = 'none';
+      });
+    }
+
+    // Variables para paginación
+    let currentPage = 1;
+    let totalPages = 1;
+    let itemsPerPage = 20;
+    let currentResults = [];
+
+    // Cargar años dinámicamente al iniciar
+    document.addEventListener('DOMContentLoaded', function () {
+      // Verificar parámetros URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const showSuccess = urlParams.get('success');
+      const skipLoad = urlParams.get('skipload');
+
+      if (showSuccess) {
+        document.getElementById('successMessage').style.display = 'block';
+        // Ocultar automáticamente después de 5 segundos
+        setTimeout(() => {
+          document.getElementById('successMessage').style.display = 'none';
+        }, 5000);
+      }
+
+      // Cerrar mensaje al hacer clic en el botón de cierre
+      document.querySelector('.notification .delete').addEventListener('click', function () {
+        document.getElementById('successMessage').style.display = 'none';
+      });
+
+      // Cargar años académicos
+      fetch('/obtener-anos')
+        .then(response => {
+          if (response.status === 404) {
+            throw new Error('El endpoint "/obtener-anos" no existe. Verifique la implementación del backend.');
+          } else if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          const yearSelect = document.getElementById('yearSelect');
+          data.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year.id_ano;
+            option.textContent = year.nombre_ano;
+            yearSelect.appendChild(option);
+          });
+
+          // Debugging: mostrar los años disponibles
+          console.log("Años cargados:", Array.from(yearSelect.options).map(opt => ({ 
+            value: opt.value, 
+            text: opt.textContent 
+          })));
+
+          // Seleccionar el año 2025 por defecto (o el año actual si no existe 2025)
+          const defaultYear = "2025"; // Cambiamos aquí para buscar primero el año 2025
+          let yearOption = Array.from(yearSelect.options).find(opt => 
+            opt.textContent.includes("2025") || opt.value === "29"
+          );
+
+          // Si no existe la opción para 2025, intentar con el año actual
+          if (!yearOption) {
+            const currentYear = new Date().getFullYear();
+            yearOption = Array.from(yearSelect.options).find(opt => opt.textContent.includes(currentYear.toString()));
+          }
+
+          // Solo cargar datos automáticamente si no viene de un registro exitoso
+          if (!skipLoad) {
+            // Cargar resultados automáticamente para el año seleccionado
+            if (yearOption) {
+              yearOption.selected = true;
+              // Cargar los cursos para el año seleccionado
+              cargarCursos(yearOption.value);
+              document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error al cargar los años:', error);
+          mostrarMensaje('Error al cargar los años académicos. Por favor, recargue la página.', 'danger');
+        });
+
+      document.getElementById('yearSelect').addEventListener('change', function () {
+        const idAno = this.value;
+        if (idAno) {
+          cargarCursos(idAno);
+        }
+      });
+
+      // Configurar botones de exportación e impresión
+      document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+      document.getElementById('printList').addEventListener('click', printList);
+
+      // Configurar paginación
+      document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          displayResults();
+        }
+      });
+
+      document.getElementById('nextPage').addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          displayResults();
+        }
+      });
+    });
+
+    // Función para cargar los cursos según el año seleccionado
+    function cargarCursos(idAno) {
+      if (!idAno) return;
+
+      fetch(`/api/cursos?id_ano=${idAno}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(cursos => {
+          const cursosSelect = document.getElementById('searchCurso');
+          // Mantener solo la primera opción (Todos los cursos)
+          cursosSelect.innerHTML = '<option value="">-- Todos los cursos --</option>';
+
+          // Añadir cada curso como opción
+          cursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso.nombre_curso;
+            option.textContent = curso.nombre_curso;
+            cursosSelect.appendChild(option);
+          });
+        })
+        .catch(error => {
+          console.error('Error al cargar cursos:', error);
+          mostrarMensaje('Error al cargar los cursos disponibles.', 'warning');
+        });
+    }
+
+    // Manejar el formulario de filtro con validación
+    document.getElementById('filterForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const id_ano = document.getElementById('yearSelect').value;
+      const nombre = document.getElementById('searchNombre').value.trim();
+      const curso = document.getElementById('searchCurso').value.trim();
+
+      // Validaciones
+      if (!id_ano) {
+        mostrarMensaje('Debe seleccionar un año académico antes de buscar.', 'warning');
+        return;
+      }
+
+      // Mostrar indicador de carga
+      document.getElementById('loadingIndicator').style.display = 'block';
+
+      // Construir la URL con los parámetros de búsqueda
+      let url = `/api/listar?id_ano=${id_ano}`;
+
+      if (nombre) {
+        url += `&nombre=${encodeURIComponent(nombre)}`;
+      }
+
+      if (curso) {
+        url += `&curso=${encodeURIComponent(curso)}`;
+      }
+
+      const yearSelectElement = document.getElementById('yearSelect');
+      const yearText = yearSelectElement.options[yearSelectElement.selectedIndex].textContent;
+      console.log("Buscando alumnos con año:", id_ano, `(${yearText})`, "- Nombre:", nombre, "- Curso:", curso);
+
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Ocultar indicador de carga
+          document.getElementById('loadingIndicator').style.display = 'none';
+
+          // Validar que data sea un array
+          if (!Array.isArray(data)) {
+            console.error('Formato de datos incorrecto:', data);
+            throw new Error('Formato de datos incorrecto');
+          }
+
+          // Código existente
+          currentResults = data;
+          currentPage = 1;
+          totalPages = Math.ceil(data.length / itemsPerPage);
+
+          // Actualizar contador de resultados
+          document.getElementById('resultsCount').textContent = `${data.length} alumnos encontrados`;
+
+          // Mostrar resultados paginados
+          displayResults();
+        })
+        .catch(error => {
+          console.error('Error al cargar alumnos:', error);
+          document.getElementById('loadingIndicator').style.display = 'none';
+          document.getElementById('resultsCount').textContent = 'Error al cargar los alumnos';
+          document.getElementById('usuariosTable').innerHTML =
+            `<tr><td colspan="4" class="has-text-centered has-text-danger">
+               Error al cargar los datos. Por favor, intente nuevamente.
+               <br><small>${error.message}</small>
+             </td></tr>`;
+          mostrarMensaje(`Error: ${error.message}`, 'danger');
+        });
+    });
+
+    // Función para mostrar resultados paginados
+    function displayResults() {
+      const usuariosTable = document.getElementById('usuariosTable');
+      usuariosTable.innerHTML = ''; // Limpiar tabla
+
+      // Ocultar indicador de carga si aún estaba visible
+      document.getElementById('loadingIndicator').style.display = 'none';
+
+      if (currentResults.length === 0) {
+        usuariosTable.innerHTML = '<tr><td colspan="4" class="has-text-centered">No hay alumnos que coincidan con los criterios de búsqueda.</td></tr>';
+        document.getElementById('paginationNumbers').innerHTML = '';
+        document.getElementById('prevPage').classList.add('is-disabled');
+        document.getElementById('nextPage').classList.add('is-disabled');
+        return;
+      }
+
+      // Calcular slice de datos para la página actual
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = Math.min(start + itemsPerPage, currentResults.length);
+      const paginatedItems = currentResults.slice(start, end);
+
+      // Crear filas de la tabla
+      paginatedItems.forEach(alumno => {
+        const row = document.createElement('tr');
+
+        // Formatear el RUT con puntos y guión si existe
+        let rutFormateado = alumno.rut || "Sin RUT";
+        if (alumno.rut && alumno.rut.length > 1) {
+          // Simple formato RUT chileno (asume que viene sin formato)
+          if (!alumno.rut.includes('-') && alumno.rut.length > 7) {
+            const rutSinDv = alumno.rut.slice(0, -1);
+            const dv = alumno.rut.slice(-1);
+            rutFormateado = rutSinDv.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "-" + dv;
+          }
+        }
+
+        row.innerHTML = `
+          <td>${rutFormateado}</td>
+          <td>${alumno.a_paterno} ${alumno.a_materno || ''}, ${alumno.nombres}</td>
+          <td>${alumno.curso || 'No asignado'}</td>
+          <td class="buttons are-small">
+            <a href="/modificar/${alumno.id_alumno}" class="button is-warning">
+              <span class="icon"><i class="fas fa-edit"></i></span>
+              <span>Editar</span>
+            </a>
+            <a href="/detalle?id=${alumno.id_alumno}" class="button is-info">
+              <span class="icon"><i class="fas fa-eye"></i></span>
+              <span>Ver</span>
+            </a>
+          </td>
+        `;
+        usuariosTable.appendChild(row);
+      });
+
+      // Actualizar paginación
+      updatePaginationControls();
+    }
+
+    // Actualizar controles de paginación
+    function updatePaginationControls() {
+      const paginationNumbers = document.getElementById('paginationNumbers');
+      paginationNumbers.innerHTML = '';
+
+      // Habilitar/deshabilitar botones anterior/siguiente
+      document.getElementById('prevPage').classList.toggle('is-disabled', currentPage === 1);
+      document.getElementById('nextPage').classList.toggle('is-disabled', currentPage === totalPages);
+
+      // Si hay muchas páginas, mostrar solo un rango
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+
+      if (endPage - startPage < 4 && totalPages > 5) {
+        startPage = Math.max(1, endPage - 4);
+      }
+
+      // Siempre mostrar la primera página
+      if (startPage > 1) {
+        addPageNumber(1);
+        if (startPage > 2) {
+          addEllipsis();
+        }
+      }
+
+      // Páginas intermedias
+      for (let i = startPage; i <= endPage; i++) {
+        addPageNumber(i);
+      }
+
+      // Siempre mostrar la última página
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          addEllipsis();
+        }
+        addPageNumber(totalPages);
+      }
+
+      function addPageNumber(pageNum) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.classList.add('pagination-link');
+        if (pageNum === currentPage) {
+          a.classList.add('is-current');
+        }
+        a.setAttribute('aria-label', `Ir a página ${pageNum}`);
+        a.textContent = pageNum;
+        a.href = '#';
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = pageNum;
+          displayResults();
+        });
+        li.appendChild(a);
+        paginationNumbers.appendChild(li);
+      }
+
+      function addEllipsis() {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.classList.add('pagination-ellipsis');
+        span.innerHTML = '&hellip;';
+        li.appendChild(span);
+        paginationNumbers.appendChild(li);
+      }
+    }
+
+    // Función para exportar a Excel (modificada para usar GET)
+    function exportToExcel() {
+      if (currentResults.length === 0) {
+        mostrarMensaje('No hay datos para exportar', 'warning');
+        return;
+      }
+
+      // Construir la URL con los mismos parámetros que el listado
+      const yearSelect = document.getElementById('yearSelect');
+      const nombreInput = document.getElementById('searchNombre'); // CORREGIDO
+      const cursoInput = document.getElementById('searchCurso');   // CORREGIDO
+
+      let url = `/exportar-excel?id_ano=${yearSelect.value}`;
+
+      if (nombreInput.value.trim()) {
+        url += `&nombre=${encodeURIComponent(nombreInput.value.trim())}`;
+      }
+
+      if (cursoInput.value) {
+        url += `&curso=${encodeURIComponent(cursoInput.value)}`;
+      }
+
+      // Redirigir al usuario a la URL de descarga
+      window.location.href = url;
+    }
+
+    // Función para imprimir lista
+    function printList() {
+      if (currentResults.length === 0) {
+        mostrarMensaje('No hay datos para imprimir', 'warning');
+        return;
+      }
+
+      const yearSelect = document.getElementById('yearSelect');
+      const yearText = yearSelect.options[yearSelect.selectedIndex].textContent;
+
+      // Crear ventana de impresión
+      const printWindow = window.open('', '_blank');
+
+      // Crear contenido HTML para impresión
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Listado de Alumnos - ${yearText}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1 { text-align: center; margin-bottom: 20px; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              tr:nth-child(even) { background-color: #f9f9f9; }
+              .footer { margin-top: 20px; text-align: center; font-size: 12px; }
+              @media print {
+                .no-print { display: none; }
+                body { margin: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Listado de Alumnos - ${yearText}</h1>
+            <div class="no-print">
+              <button onclick="window.print()">Imprimir</button>
+              <button onclick="window.close()">Cerrar</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>RUT</th>
+                  <th>Nombre Completo</th>
+                  <th>Curso</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${currentResults.map(alumno => `
+                  <tr>
+                    <td>${alumno.rut || 'Sin RUT'}</td>
+                    <td>${alumno.a_paterno} ${alumno.a_materno || ''}, ${alumno.nombres}</td>
+                    <td>${alumno.curso || 'No asignado'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="footer">
+              <p>Fecha de impresión: ${new Date().toLocaleDateString()} - Total alumnos: ${currentResults.length}</p>
+            </div>
+          </body>
+        </html>
+      `);
+
+      // Cerrar documento y enfocar para impresión
+      printWindow.document.close();
+      printWindow.focus();
+    }
+
+    
+  </script>
+</body>
+
+</html>

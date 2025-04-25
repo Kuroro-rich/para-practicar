@@ -1,0 +1,41 @@
+/* CSS específico para la página de listado */
+.table-container {
+    overflow-x: auto;
+  }
+  
+  .is-disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  
+  /* Personalización de la tabla */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+  }
+  
+  .table tr:hover {
+    background-color: #f8f8f8;
+  }
+  
+  /* Estilos para los mensajes */
+  .notification {
+    margin-bottom: 20px;
+  }
+  
+  /* Mejoras para vista móvil */
+  @media screen and (max-width: 768px) {
+    .buttons .button {
+      padding-left: 0.5em;
+      padding-right: 0.5em;
+    }
+    
+    .table td, .table th {
+      padding: 0.5em;
+    }
+  }

@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modificar Alumno</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/css/estilos.css">
+    <link rel="stylesheet" href="/css/modificar.css">
+</head>
+
+<body>
+    <!-- Indicador de carga (inicialmente oculto) -->
+    <div id="loaderContainer" class="loader-container" style="display: none;">
+        <div class="spinner">
+            <i class="fas fa-spinner fa-pulse fa-4x"></i>
+            <p class="has-text-centered mt-3">Cargando datos...</p>
+        </div>
+    </div>
+
+    <!-- Contenedor de mensajes -->
+    <div id="mensajes" class="notifications-container"></div>
+
+    <section class="section">
+        <div class="container">
+            <h1 class="title has-text-centered">Modificar Alumno</h1>
+
+            <!-- Mostrar información básica del alumno -->
+            <div class="box has-background-light mb-5">
+                <div class="columns is-vcentered">
+                    <div class="column">
+                        <p class="is-size-5"><strong>Alumno:</strong> <span id="nombreCompletoAlumno">Cargando...</span></p>
+                        <p><strong>RUT:</strong> <span id="rutAlumno">Cargando...</span></p>
+                    </div>
+                    <div class="column is-narrow">
+                        <a href="/listar" class="button is-link">
+                            <span class="icon">
+                                <i class="fas fa-arrow-left"></i>
+                            </span>
+                            <span>Volver al listado</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pestañas -->
+            <div class="tabs is-centered is-boxed">
+                <ul>
+                    <li class="is-active" data-tab="datos-personales"><a>Datos Personales</a></li>
+                    <li data-tab="datos-familiares"><a>Datos Familiares</a></li>
+                    <li data-tab="datos-apoderado"><a>Datos Apoderado</a></li>
+                </ul>
+            </div>
+
+            <!-- Contenido de las pestañas -->
+            <!-- Datos Personales -->
+            <div id="datos-personales" class="tab-content is-active">
+                <div class="header-section">Datos Personales</div>
+                <form id="form-datos-personales">
+                    <input type="hidden" name="idUsuario">
+                    <input type="hidden" name="idAlumno">
+
+                    <div class="columns is-multiline">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Apellido Paterno</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="apellidoPaterno" placeholder="Apellido Paterno" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Apellido Materno</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="apellidoMaterno" placeholder="Apellido Materno" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Nombres</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="nombres" placeholder="Nombres" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Cédula de identidad</label>
+                                <div class="control is-flex">
+                                    <input class="input" type="text" name="rut" placeholder="Ej: 12.345.678-9" required>
+                                    <label class="checkbox ml-2">
+                                        <input type="checkbox" name="sinRut">
+                                        Sin Rut
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nacionalidad</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="idNacionalidad">
+                                            <option value="">** Cargando nacionalidades... **</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Origen indígena</label>
+                                <div class="control">
+                                    <label class="radio">
+                                        <input type="radio" name="origenIndigena" value="Si">
+                                        Sí
+                                    </label>
+                                    <label class="radio">
+                                        <input type="radio" name="origenIndigena" value="No">
+                                        No
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Fecha De Nacimiento</label>
+                                <div class="control">
+                                    <input class="input" type="date" name="fechaNacimiento" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Género</label>
+                                <div class="control">
+                                    <label class="radio">
+                                        <input type="radio" name="genero" value="1">
+                                        Masculino
+                                    </label>
+                                    <label class="radio">
+                                        <input type="radio" name="genero" value="2">
+                                        Femenino
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Calle/Pasaje/Av.</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="direccion" placeholder="Calle/Pasaje/Avenida">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Nro</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="numero" placeholder="Número">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Villa o población</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="villa" placeholder="Villa o Población">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Departamento</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="departamento" placeholder="Departamento">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Número de Teléfono</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="telefono" placeholder="Teléfono">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Comuna</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="idComuna">
+                                            <option value="">** Cargando comunas... **</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nombre del Contacto</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="nombreContacto" placeholder="Nombre del Contacto">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">E-Mail</label>
+                                <div class="control">
+                                    <input class="input" type="email" name="email" placeholder="Correo Electrónico">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Año de Ingreso</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="anioIngreso" id="anioIngreso">
+                                    <!-- Las opciones se cargarán dinámicamente -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Establecimiento Anterior -->
+                    <div class="field">
+                        <label class="label required">Establecimiento Anterior</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="idEstablecimientoAnterior" id="idEstablecimientoAnterior">
+                                    <option value="">** Cargando establecimientos... **</option>
+                                </select>
+                            </div>
+                        </div>
+                        <label class="checkbox ml-2">
+                            <input type="checkbox" name="sinInformacion" id="checkSinInformacion">
+                            Sin información
+                        </label>
+                    </div>
+
+                    <div class="field">
+                        <label class="label required">Promedio Anterior</label>
+                        <div class="control">
+                            <input class="input" type="text" name="promedioAnterior" placeholder="Promedio Anterior">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label required">¿Ha estado en programa PIE?</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="programaPIE" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="programaPIE" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Plan al que postula</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="plan" id="plan">
+                                    <option value="">** Cargando planes... **</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos médicos -->
+                    <div class="header-section mt-5">DATOS MÉDICOS</div>
+                    <div class="field">
+                        <label class="label required">Alérgico al medicamento</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="alergicoMedicamento" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="alergicoMedicamento" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Enfermedad Actual</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="enfermedadActual" placeholder="Enfermedad Actual">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Medicamento Consumo</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="medicamentoConsumo" placeholder="Medicamento Consumo">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label required">Realiza Educación Física</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="realizaEducacionFisica" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="realizaEducacionFisica" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Documentos Entregados -->
+                    <div class="header-section mt-5">DOCUMENTOS ENTREGADOS</div>
+                    <div class="field">
+                        <label class="label required">Certificado de Nacimiento</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="certificadoNacimiento" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="certificadoNacimiento" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label required">Informe de personalidad</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="informePersonalidad" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="informePersonalidad" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label required">Informe parcial de notas</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="informeNotas" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="informeNotas" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label required">Certificado anual de estudios</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="certificadoEstudios" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="certificadoEstudios" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label required">Ficha firmada por Apoderado</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="fichaFirmada" value="Si">
+                                Sí
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="fichaFirmada" value="No">
+                                No
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Recomendación -->
+                    <div class="header-section mt-5">RECOMENDACIÓN</div>
+                    <div class="field">
+                        <label class="label">Por qué se decidió postular a su alumno</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="motivoPostulacion">
+                                    <option value="">*** SELECCIONE UNA OPCIÓN ***</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Alumno que recomendó el establecimiento</label>
+                        <div class="control">
+                            <input class="input" type="text" name="alumnoRecomendo">
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="header-section mt-5">OBSERVACIONES</div>
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Observaciones</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="observaciones">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">¿Qué quiere ser cuando grande y por qué?</label>
+                                <div class="control">
+                                    <textarea class="textarea" name="aspiracionFutura"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">¿A quién admira?</label>
+                                <div class="control">
+                                    <textarea class="textarea" name="personaAdmirada"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Datos Familiares -->
+            <div id="datos-familiares" class="tab-content">
+                <div class="header-section">Datos Familiares</div>
+                <form id="form-datos-familiares">
+                    <div class="columns is-multiline">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Vive Con</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="viveCon">
+                                            <option value="Ambos Padres">Ambos Padres</option>
+                                            <option value="Madre">Madre</option>
+                                            <option value="Padre">Padre</option>
+                                            <option value="Otro Familiar">Otro Familiar</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Tipo de Vivienda</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="tipoVivienda">
+                                            <option value="PROPIA PAGADA">PROPIA PAGADA</option>
+                                            <option value="PROPIA PAGANDO">PROPIA PAGANDO</option>
+                                            <option value="ARRENDADA">ARRENDADA</option>
+                                            <option value="ALLEGADO">ALLEGADO</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns is-multiline">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nº Hermanos</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="hermanos" id="numeroHermanos" min="0" max="10">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Hermanos estudiando actualmente</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="hermanosEstudiando" min="0" max="10">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Año de nacimiento:</label>
+                            </div>
+                            <div id="contenedor-hermanos">
+                                <!-- Los campos de hermanos se generarán dinámicamente cuando se ingrese el número -->
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">&nbsp;</label>
+                            </div>
+                            <div id="contenedor-hermanos-2">
+                                <!-- Los campos de hermanos se generarán dinámicamente cuando se ingrese el número -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns is-multiline">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nº Personas</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="personas" min="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nº Trabajadores</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="trabajadores" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Ingreso Pesos (Líquido)</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="ingresoPesos" min="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Teléfono</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="telefonoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nombre del Contacto</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="nombreContactoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos familiar 1 -->
+                    <div class="header-section mt-5">DATOS FAMILIAR 1</div>
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Parentesco</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="parentesco" id="parentesco">
+                                            <option value="">** Seleccione **</option>
+                                            <option value="Padre">Padre</option>
+                                            <option value="Madre">Madre</option>
+                                            <option value="Hermano/a">Hermano/a</option>
+                                            <option value="Abuelo/a">Abuelo/a</option>
+                                            <option value="Tío/a">Tío/a</option>
+                                            <option value="Otro">Otro</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <div class="control">
+                                    <button type="button" class="button is-info" id="btnCopiarComoApoderado">
+                                        Copiar como Apoderado
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns is-multiline">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">RUT</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="rutFamiliar" id="rutFamiliar" placeholder="Ej: 12.345.678-9">
+                                    <label class="checkbox ml-2">
+                                        <input type="checkbox" name="extranjeroSinRut" id="extranjeroSinRut">
+                                        Extranjero sin Rut
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Apoderado Suplente</label>
+                                <div class="control">
+                                    <input type="checkbox" name="apoderadoSuplente" id="apoderadoSuplente">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Nombres</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="nombresFamiliar" id="nombresFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Apellido Paterno</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="apellidoPaternoFamiliar" id="apellidoPaternoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Fecha Nacimiento</label>
+                                <div class="control">
+                                    <input class="input" type="date" name="fechaNacimientoFamiliar" id="fechaNacimientoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Apellido Materno</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="apellidoMaternoFamiliar" id="apellidoMaternoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nombre Empresa</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="empresaFamiliar" id="empresaFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Género</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="generoFamiliar" id="generoFamiliar">
+                                            <option value="">** Seleccione **</option>
+                                            <option value="Masculino">Masculino</option>
+                                            <option value="Femenino">Femenino</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Dirección del Trabajo</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="direccionTrabajoFamiliar" id="direccionTrabajoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Cargo en la Empresa</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="cargoFamiliar" id="cargoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns">
+                        <div class="column">
+                            <div class="field">
+                                <label class="label">Teléfono</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="telefonoFamiliar" id="telefonoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="field">
+                                <label class="label">Teléfono del Trabajo</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="telefonoTrabajoFamiliar" id="telefonoTrabajoFamiliar">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor para familiares adicionales -->
+                    <div id="familiares-adicionales" class="mt-4"></div>
+                    <div id="contenedor-familiares" class="mt-4"></div>
+
+                    <div class="field">
+                        <div class="control">
+                            <button type="button" class="button is-success" id="btnAgregarFamiliar">Agregar Familiar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Datos Apoderado -->
+            <div id="datos-apoderado" class="tab-content">
+                <div class="header-section">Datos Apoderado</div>
+                <form id="form-datos-apoderado">
+                    <input type="hidden" name="idFamiliar" id="idFamiliar">
+                    <div class="field yellow-bg p-3">
+                        <label class="label required">El Apoderado es</label>
+                        <div class="control">
+                            <div class="select">
+                                <select name="tipoApoderado" id="tipoApoderado">
+                                    <option value="">** Seleccione **</option>
+                                    <option value="Madre">Madre</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Abuelo/a">Abuelo/a</option>
+                                    <option value="Tío/a">Tío/a</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <span class="ml-2">(*) Según la selección se autocompletará con la información de
+                                "Familiares"</span>
+                        </div>
+                    </div>
+
+                    <div class="columns is-multiline">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Apellido Paterno</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="apellidoPaternoApoderado" id="apellidoPaternoApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Apellido Materno</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="apellidoMaternoApoderado" id="apellidoMaternoApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Nombres</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="nombresApoderado" id="nombresApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Cédula de identidad</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="rutApoderado" id="rutApoderado">
+                                    <label class="checkbox ml-2">
+                                        <input type="checkbox" name="extranjeroSinRutApoderado" id="extranjeroSinRutApoderado">
+                                        Extranjero sin Rut
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Género</label>
+                                <div class="control">
+                                    <label class="radio">
+                                        <input type="radio" name="generoApoderado" value="Masculino">
+                                        Masculino
+                                    </label>
+                                    <label class="radio">
+                                        <input type="radio" name="generoApoderado" value="Femenino">
+                                        Femenino
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Fecha. Nacimiento</label>
+                                <div class="control">
+                                    <input class="input" type="date" name="fechaNacimientoApoderado" id="fechaNacimientoApoderado">
+                                    <span id="edadApoderado"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Dirección: Calle/Pasaje/Avenida</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="direccionApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Dirección: Número</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="numeroApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Dirección: Villa/Población</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="villaApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label required">Comuna</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="idComunaApoderado" id="comunaApoderado">
+                                            <option value="">** Cargando comunas... **</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Teléfono</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="telefonoApoderado" id="telefonoApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">E-Mail</label>
+                                <div class="control">
+                                    <input class="input" type="email" name="emailApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Nombre del Contacto</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="nombreContactoApoderado">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Email 1:</label>
+                                <div class="control">
+                                    <input class="input" type="email" name="email1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Email 2:</label>
+                                <div class="control">
+                                    <input class="input" type="email" name="email2">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Email 3:</label>
+                                <div class="control">
+                                    <input class="input" type="email" name="email3">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns is-multiline">
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Empresa</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="empresaApoderado" id="empresaApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Cargo</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="cargoApoderado" id="cargoApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Años de antigüedad</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="antiguedadApoderado" value="0" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Sueldo mensual pesos (Líquido)</label>
+                                <div class="control">
+                                    <input class="input" type="number" name="sueldoApoderado" value="0" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Dirección del trabajo</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="direccionTrabajoApoderado" id="direccionTrabajoApoderado">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-half">
+                            <div class="field">
+                                <label class="label">Teléfono trabajo/Celular</label>
+                                <div class="control">
+                                    <input class="input" type="text" name="telefonoTrabajoApoderado" id="telefonoTrabajoApoderado">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Botón para guardar -->
+            <div class="field mt-5">
+                <div class="control">
+                    <button class="button is-primary" id="guardarCambios">Actualizar Información</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="/js/modificar.js"></script>
+</body>
+
+</html>
