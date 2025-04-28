@@ -1,0 +1,49 @@
+/* Estilos para registro-completo.html */
+
+/* Sistema de pestañas */
+.tab-content {
+    display: none;
+}
+
+.tab-content.is-active {
+    display: block;
+}
+
+/* Secciones y encabezados */
+.header-section {
+    background-color: #333;
+    color: white;
+    padding: 8px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.yellow-bg {
+    background-color: #ffffcc;
+}
+
+.field-label {
+    font-weight: bold;
+}
+
+/* Campos requeridos */
+.required::before {
+    content: "(*)";
+    color: red;
+    margin-right: 5px;
+}
+
+.documents-section {
+    background-color: #eee;
+}
+
+/* Estilos para el modal de búsqueda */
+.modal-card {
+    max-width: 800px;
+    width: 80%;
+}
+
+.establecimiento-resultados {
+    max-height: 300px;
+    overflow-y: auto;
+}
