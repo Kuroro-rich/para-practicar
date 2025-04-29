@@ -620,7 +620,7 @@ app.post("/crear-alumno", upload.none(), (req, res) => {
       medicamentos_consumo, certificado_nacimiento, inform_personalidad, 
       inform_parcial_nota, certificada_anual_estudio, ficha_firmada, 
       persona_retiro, obs
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const valoresAlumno = [
@@ -1025,38 +1025,53 @@ app.post("/guardar-apoderado", upload.none(), (req, res) => {
             });
           } else {
             // Si no existe, lo creamos
-            const queryInsertarApoderado = `
-              INSERT INTO apoderado (
-                id_usuario, empresa, cargo,
-                direccion_trabajo, telefono_trabajo
-              ) VALUES (?, ?, ?, ?, ?)
-            `;
+            // 1. Obtener el próximo id_apoderado disponible
+            db.query('SELECT IFNULL(MAX(id_apoderado), 0) + 1 AS nuevoId FROM apoderado', function(err, result) {
+                if (err) {
+                    return db.rollback(function() {
+                        console.error('Error al obtener nuevo id_apoderado:', err);
+                        res.status(500).json({ success: false, message: 'Error al obtener nuevo id_apoderado' });
+                    });
+                }
+                const nuevoId = result[0].nuevoId;
 
-            const valoresInsertarApoderado = [
-              idUsuarioApoderado,
-              empresaTrabajo || null,
-              cargoEmpresa || null,
-              direccionTrabajo || null,
-              telefonoTrabajo || null
-            ];
+                // 2. Ahora sí, haz el INSERT incluyendo id_apoderado
+                const queryApoderado = `
+                    INSERT INTO apoderado (
+                        id_apoderado, id_usuario, empresa, cargo, direccion_trabajo, telefono_trabajo
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                `;
+                const valoresApoderado = [
+                    nuevoId,
+                    idUsuarioApoderado,
+                    apoderado.empresaApoderado || '',
+                    apoderado.cargoApoderado || '',
+                    apoderado.direccionTrabajoApoderado || '',
+                    apoderado.telefonoTrabajoApoderado || ''
+                ];
 
-            db.query(queryInsertarApoderado, valoresInsertarApoderado, (err, resultApoderado) => {
-              if (err) return handleDatabaseError(err, res, "Error al crear apoderado");
+                db.query(queryApoderado, valoresApoderado, function(err, resultApoderado) {
+                    if (err) {
+                        return db.rollback(function() {
+                            console.error('Error al crear apoderado:', err);
+                            res.status(500).json({ success: false, message: 'Error al crear apoderado' });
+                        });
+                    }
+                    const idApoderado = nuevoId;
 
-              const idApoderado = resultApoderado.insertId;
+                    // Actualizar la referencia en la tabla alumno
+                    const queryActualizarAlumno = "UPDATE alumno SET id_apoderado = ? WHERE id_usuario = ?";
 
-              // Actualizar la referencia en la tabla alumno
-              const queryActualizarAlumno = "UPDATE alumno SET id_apoderado = ? WHERE id_usuario = ?";
+                    db.query(queryActualizarAlumno, [idApoderado, idUsuarioAlumno], (err) => {
+                      if (err) return handleDatabaseError(err, res, "Error al actualizar referencia del apoderado");
 
-              db.query(queryActualizarAlumno, [idApoderado, idUsuarioAlumno], (err) => {
-                if (err) return handleDatabaseError(err, res, "Error al actualizar referencia del apoderado");
-
-                res.json({
-                  success: true,
-                  message: "Apoderado creado correctamente",
-                  idApoderado: idApoderado
+                      res.json({
+                        success: true,
+                        message: "Apoderado creado correctamente",
+                        idApoderado: idApoderado
+                      });
+                    });
                 });
-              });
             });
           }
         });
@@ -1350,25 +1365,23 @@ app.get('/exportar-excel', (req, res) => {
 app.post('/guardar-registro-completo', async (req, res) => {
     try {
         const { alumno, familiares, apoderado } = req.body;
-        
-        // Verificar que tenemos los datos mínimos necesarios
+
         if (!alumno || !apoderado) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Datos incompletos. Se requieren datos del alumno y apoderado.' 
+            return res.status(400).json({
+                success: false,
+                message: 'Datos incompletos. Se requieren datos del alumno y apoderado.'
             });
         }
-        
-        // Iniciar una transacción para asegurar consistencia
+
         db.beginTransaction(async function(err) {
-            if (err) { 
+            if (err) {
                 console.error('Error al iniciar transacción:', err);
-                return res.status(500).json({ 
-                    success: false, 
-                    message: 'Error al iniciar la transacción en la base de datos' 
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error al iniciar la transacción en la base de datos'
                 });
             }
-            
+
             try {
                 // 1. Crear usuario del apoderado
                 const queryUsuarioApoderado = `
@@ -1378,11 +1391,10 @@ app.post('/guardar-registro-completo', async (req, res) => {
                         id_comuna, telefono, e_mail, id_perfil_base
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 3)
                 `;
-                
                 const valoresUsuarioApoderado = [
-                    apoderado.rutApoderado || 'SIN RUT', 
-                    apoderado.nombresApoderado.toUpperCase(), 
-                    apoderado.apellidoPaternoApoderado.toUpperCase(), 
+                    apoderado.rutApoderado || 'SIN RUT',
+                    apoderado.nombresApoderado.toUpperCase(),
+                    apoderado.apellidoPaternoApoderado.toUpperCase(),
                     (apoderado.apellidoMaternoApoderado || '').toUpperCase(),
                     apoderado.generoApoderado || '1',
                     apoderado.fechaNacimientoApoderado || null,
@@ -1394,7 +1406,7 @@ app.post('/guardar-registro-completo', async (req, res) => {
                     apoderado.telefonoApoderado || '',
                     apoderado.emailApoderado || '',
                 ];
-                
+
                 db.query(queryUsuarioApoderado, valoresUsuarioApoderado, function(err, resultUsuarioApoderado) {
                     if (err) {
                         return db.rollback(function() {
@@ -1402,215 +1414,129 @@ app.post('/guardar-registro-completo', async (req, res) => {
                             res.status(500).json({ success: false, message: 'Error al crear usuario del apoderado' });
                         });
                     }
-                    
                     const idUsuarioApoderado = resultUsuarioApoderado.insertId;
-                    
-                    // 2. Crear apoderado - CORREGIDO
-                    const queryApoderado = `
-                        INSERT INTO apoderado (
-                            id_usuario, empresa, cargo, direccion_trabajo, telefono_trabajo
-                        ) VALUES (?, ?, ?, ?, ?)
-                    `;
-                    
-                    const valoresApoderado = [
-                        idUsuarioApoderado,
-                        apoderado.empresaApoderado || '',
-                        apoderado.cargoApoderado || '',
-                        apoderado.direccionTrabajoApoderado || '',
-                        apoderado.telefonoTrabajoApoderado || ''
-                    ];
-                    
-                    db.query(queryApoderado, valoresApoderado, function(err, resultApoderado) {
+
+                    // 2. Crear apoderado
+                    db.query('SELECT IFNULL(MAX(id_apoderado), 0) + 1 AS nuevoId FROM apoderado', function(err, result) {
                         if (err) {
                             return db.rollback(function() {
-                                console.error('Error al crear apoderado:', err);
-                                res.status(500).json({ success: false, message: 'Error al crear apoderado' });
+                                console.error('Error al obtener nuevo id_apoderado:', err);
+                                res.status(500).json({ success: false, message: 'Error al obtener nuevo id_apoderado' });
                             });
                         }
-                        
-                        const idApoderado = resultApoderado.insertId;
-                        
-                        // 3. Crear usuario del alumno
-                        const queryUsuarioAlumno = `
-                            INSERT INTO usuario (
-                                rut, nombres, a_paterno, a_materno, sexo, 
-                                fecha_nacimiento, direccion, direccion_villa, direccion_nro, direccion_depto,
-                                id_comuna, telefono, e_mail, id_perfil_base, nacionalidad
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 3, ?)
+                        const nuevoId = result[0].nuevoId;
+
+                        const queryApoderado = `
+                            INSERT INTO apoderado (
+                                id_apoderado, id_usuario, empresa, cargo, direccion_trabajo, telefono_trabajo
+                            ) VALUES (?, ?, ?, ?, ?, ?)
                         `;
-                        
-                        const valoresUsuarioAlumno = [
-                            alumno.rut || 'SIN RUT', 
-                            alumno.nombres.toUpperCase(), 
-                            alumno.apellidoPaterno.toUpperCase(), 
-                            (alumno.apellidoMaterno || '').toUpperCase(),
-                            alumno.genero || '1',
-                            alumno.fechaNacimiento || null,
-                            alumno.direccion || '',
-                            alumno.villa || '',
-                            alumno.numero || '',
-                            alumno.departamento || '',
-                            alumno.idComuna || null,
-                            alumno.telefono || '',
-                            alumno.email || '',
-                            alumno.idNacionalidad || null
+                        const valoresApoderado = [
+                            nuevoId,
+                            idUsuarioApoderado,
+                            apoderado.empresaApoderado || '',
+                            apoderado.cargoApoderado || '',
+                            apoderado.direccionTrabajoApoderado || '',
+                            apoderado.telefonoTrabajoApoderado || ''
                         ];
-                        
-                        db.query(queryUsuarioAlumno, valoresUsuarioAlumno, function(err, resultUsuarioAlumno) {
+
+                        db.query(queryApoderado, valoresApoderado, function(err, resultApoderado) {
                             if (err) {
                                 return db.rollback(function() {
-                                    console.error('Error al crear usuario del alumno:', err);
-                                    res.status(500).json({ success: false, message: 'Error al crear usuario del alumno' });
+                                    console.error('Error al crear apoderado:', err);
+                                    res.status(500).json({ success: false, message: 'Error al crear apoderado' });
                                 });
                             }
-                            
-                            const idUsuarioAlumno = resultUsuarioAlumno.insertId;
-                            
-                            // 4. Crear alumno
-                            const queryAlumno = `
-                                INSERT INTO alumno (
-                                    id_usuario, id_apoderado, origen_indigena, realizo_pie,
-                                    educ_fisica, alergico, enfermedad_actual,
-                                    medicamentos_consumo, id_estabAnterior, promedio_anterior,
-                                    certificado_nacimiento, inform_personalidad, inform_parcial_nota,
-                                    certificada_anual_estudio, ficha_firmada,
-                                    id_ano, id_plan, persona_retiro, obs
-                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            const idApoderado = nuevoId;
+
+                            // 3. Crear usuario del alumno
+                            const queryUsuarioAlumno = `
+                                INSERT INTO usuario (
+                                    rut, nombres, a_paterno, a_materno, sexo, 
+                                    fecha_nacimiento, direccion, direccion_villa, direccion_nro, direccion_depto,
+                                    id_comuna, telefono, e_mail, id_perfil_base
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 2)
                             `;
-                            
-                            const valoresAlumno = [
-                                idUsuarioAlumno,
-                                idApoderado,
-                                alumno.origenIndigena === 'Si' ? 1 : 0,
-                                alumno.programaPIE === 'Si' ? 1 : 0,
-                                alumno.realizaEducacionFisica === 'Si' ? 1 : 0,
-                                alumno.alergicoMedicamento === 'Si' ? 1 : 0,
-                                alumno.enfermedadActual || '',
-                                alumno.medicamentoConsumo || '',
-                                alumno.idEstablecimientoAnterior || null,
-                                alumno.promedioAnterior || '',
-                                alumno.certificadoNacimiento === 'Si' ? 1 : 0,
-                                alumno.informePersonalidad === 'Si' ? 1 : 0,
-                                alumno.informeNotas === 'Si' ? 1 : 0,
-                                alumno.certificadoEstudios === 'Si' ? 1 : 0,
-                                alumno.fichaFirmada === 'Si' ? 1 : 0,
-                                alumno.idAno || null,
-                                alumno.idPlan || null,
-                                alumno.personaRetiro || '',
-                                alumno.observaciones || ''
+                            const valoresUsuarioAlumno = [
+                                alumno.rut || 'SIN RUT',
+                                alumno.nombres.toUpperCase(),
+                                alumno.apellidoPaterno.toUpperCase(),
+                                (alumno.apellidoMaterno || '').toUpperCase(),
+                                alumno.genero || '1',
+                                alumno.fechaNacimiento || null,
+                                alumno.direccion || '',
+                                alumno.villa || '',
+                                alumno.numero || '',
+                                alumno.departamento || '',
+                                alumno.idComuna || null,
+                                alumno.telefono || '',
+                                alumno.email || '',
                             ];
-                            
-                            db.query(queryAlumno, valoresAlumno, function(err, resultAlumno) {
+
+                            db.query(queryUsuarioAlumno, valoresUsuarioAlumno, function(err, resultUsuarioAlumno) {
                                 if (err) {
                                     return db.rollback(function() {
-                                        console.error('Error al crear alumno:', err);
-                                        res.status(500).json({ success: false, message: 'Error al crear alumno' });
+                                        console.error('Error al crear usuario del alumno:', err);
+                                        res.status(500).json({ success: false, message: 'Error al crear usuario del alumno' });
                                     });
                                 }
-                                
-                                // 5. Insertar en alumno_ano
-                                const queryAlumnoAno = `
-                                    INSERT INTO alumno_ano (id_usuario, id_curso, id_ano)
-                                    VALUES (?, ?, ?)
+                                const idUsuarioAlumno = resultUsuarioAlumno.insertId;
+
+                                // 4. Crear alumno
+                                const queryAlumno = `
+                                    INSERT INTO alumno (
+                                        id_usuario, id_apoderado, id_ano, id_plan, promedio_anterior, 
+                                        id_estabAnterior, origen_indigena, realizo_pie, educ_fisica, alergico, 
+                                        enfermedad_actual, medicamentos_consumo, certificado_nacimiento, 
+                                        inform_personalidad, inform_parcial_nota, certificada_anual_estudio, 
+                                        ficha_firmada, obs, id_usuario_inscribio
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                 `;
-                                
-                                const valoresAlumnoAno = [
+
+                                const valoresAlumno = [
                                     idUsuarioAlumno,
-                                    alumno.idCurso,
-                                    alumno.idAno
+                                    idApoderado,
+                                    alumno.idAno || null,
+                                    alumno.idPlan || null,
+                                    alumno.promedioAnterior !== undefined && alumno.promedioAnterior !== '' ? alumno.promedioAnterior : null,
+                                    alumno.idEstablecimientoAnterior || null,
+                                    alumno.origenIndigena === 'Si' ? 1 : 0,
+                                    alumno.programaPIE === 'Si' ? 1 : 0,
+                                    alumno.realizaEducacionFisica === 'Si' ? 1 : 0,
+                                    alumno.alergicoMedicamento === 'Si' ? 1 : 0,
+                                    alumno.enfermedadActual || '',
+                                    alumno.medicamentoConsumo || '',
+                                    alumno.certificadoNacimiento === 'Si' ? 1 : 0,
+                                    alumno.informePersonalidad === 'Si' ? 1 : 0,
+                                    alumno.informeNotas === 'Si' ? 1 : 0,
+                                    alumno.certificadoEstudios === 'Si' ? 1 : 0,
+                                    alumno.fichaFirmada === 'Si' ? 1 : 0,
+                                    alumno.observaciones || '',
+                                    idUsuarioApoderado // <-- este es el usuario que inscribe (apoderado)
                                 ];
-                                
-                                db.query(queryAlumnoAno, valoresAlumnoAno, function(err) {
+
+                                db.query(queryAlumno, valoresAlumno, function(err, resultAlumno) {
                                     if (err) {
                                         return db.rollback(function() {
-                                            console.error('Error al asociar alumno con curso y año:', err);
-                                            res.status(500).json({ success: false, message: 'Error al asociar alumno con curso y año' });
+                                            console.error('Error al crear alumno:', err);
+                                            res.status(500).json({ success: false, message: 'Error al crear alumno' });
                                         });
                                     }
-                                    
-                                    // 6. Crear familiares
-                                    if (familiares && familiares.length > 0) {
-                                        let familiaresProcesados = 0;
-                                        
-                                        const procesarSiguienteFamiliar = function(index) {
-                                            if (index >= familiares.length) {
-                                                // Todos los familiares procesados
-                                                finalizarTransaccion();
-                                                return;
-                                            }
-                                            
-                                            const familiar = familiares[index];
-                                            
-                                            // Si no hay datos mínimos, saltar al siguiente
-                                            if (!familiar.nombres || !familiar.apellidoPaterno) {
-                                                procesarSiguienteFamiliar(index + 1);
-                                                return;
-                                            }
-                                            
-                                            const queryFamiliar = `
-                                                INSERT INTO alumno_familia (
-                                                    id_usuario, id_parentesco, nombre, ap_paterno, ap_materno,
-                                                    rut, fecha_nacimiento, sexo, telefono,
-                                                    em_nombre, em_cargo, em_direccion, em_telefono,
-                                                    apoderado_conf
-                                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                            `;
-                                            
-                                            const valoresFamiliar = [
-                                                idUsuarioAlumno,
-                                                familiar.parentesco || '',
-                                                familiar.nombres.toUpperCase(),
-                                                familiar.apellidoPaterno.toUpperCase(),
-                                                (familiar.apellidoMaterno || '').toUpperCase(),
-                                                familiar.rut || 'SIN RUT',
-                                                familiar.fechaNacimiento || null,
-                                                familiar.genero || '1',
-                                                familiar.telefono || '',
-                                                familiar.nombreEmpresa || '',
-                                                familiar.cargoEmpresa || '',
-                                                familiar.direccionTrabajo || '',
-                                                familiar.telefonoTrabajo || '',
-                                                familiar.apoderadoSuplente ? 1 : 0
-                                            ];
-                                            
-                                            db.query(queryFamiliar, valoresFamiliar, function(err) {
-                                                if (err) {
-                                                    return db.rollback(function() {
-                                                        console.error('Error al crear familiar:', err);
-                                                        res.status(500).json({ success: false, message: 'Error al crear familiar' });
-                                                    });
-                                                }
-                                                
-                                                familiaresProcesados++;
-                                                procesarSiguienteFamiliar(index + 1);
+
+                                    db.commit(function(err) {
+                                        if (err) {
+                                            return db.rollback(function() {
+                                                console.error('Error al confirmar la transacción:', err);
+                                                res.status(500).json({ success: false, message: 'Error al confirmar la transacción' });
                                             });
-                                        };
-                                        
-                                        // Iniciar el procesamiento de familiares
-                                        procesarSiguienteFamiliar(0);
-                                    } else {
-                                        finalizarTransaccion();
-                                    }
-                                    
-                                    function finalizarTransaccion() {
-                                        // Commit de la transacción
-                                        db.commit(function(err) {
-                                            if (err) {
-                                                return db.rollback(function() {
-                                                    console.error('Error al confirmar la transacción:', err);
-                                                    res.status(500).json({ success: false, message: 'Error al confirmar la transacción' });
-                                                });
-                                            }
-                                            
-                                            // Éxito - devolver los IDs generados
-                                            res.json({
-                                                success: true,
-                                                message: 'Registro guardado con éxito',
-                                                idAlumno: idUsuarioAlumno,
-                                                idApoderado: idApoderado
-                                            });
+                                        }
+                                        res.json({
+                                            success: true,
+                                            message: "Registro completo guardado correctamente",
+                                            idAlumno: idUsuarioAlumno,
+                                            idApoderado: idApoderado
                                         });
-                                    }
+                                    });
                                 });
                             });
                         });
