@@ -194,7 +194,7 @@
                                 <div class="control">
                                     <div class="select is-fullwidth">
                                         <!-- CAMBIO: Cambiado name="anioIngreso" a name="idAno" -->
-                                        <select name="idAno" id="anioIngreso">
+                                        <select name="idAno" id="idAno">
                                             <option value="">-- Seleccione año académico --</option>
                                             <!-- Años académicos se cargarán dinámicamente -->
                                         </select>
@@ -209,7 +209,7 @@
                                 <label class="label required">Curso</label>
                                 <div class="control">
                                     <div class="select is-fullwidth">
-                                        <select name="idCurso" id="cursosSelect">
+                                        <select name="idCurso" id="idCurso">
                                             <option value="">-- Seleccione curso --</option>
                                             <!-- Los cursos se cargarán dinámicamente -->
                                         </select>
@@ -752,7 +752,7 @@
                             <div class="field">
                                 <label class="label required">Apellido Paterno</label>
                                 <div class="control">
-                                    <input class="input" type="text" name="apellidoPaternoApoderado" value="ORMAZABAL">
+                                    <input class="input" type="text" name="apellidoPaternoApoderado" id="apellidoPaternoApoderado" required>
                                 </div>
                             </div>
                         </div>
@@ -760,7 +760,7 @@
                             <div class="field">
                                 <label class="label required">Apellido Materno</label>
                                 <div class="control">
-                                    <input class="input" type="text" name="apellidoMaternoApoderado" value="RODRIGUEZ">
+                                    <input class="input" type="text" name="apellidoMaternoApoderado" value="">
                                 </div>
                             </div>
                         </div>
@@ -769,7 +769,7 @@
                                 <label class="label required">Nombres</label>
                                 <div class="control">
                                     <input class="input" type="text" name="nombresApoderado"
-                                        value="VERONICA DEL CARMEN">
+                                        value="">
                                 </div>
                             </div>
                         </div>
@@ -777,7 +777,7 @@
                             <div class="field">
                                 <label class="label required">Cédula de identidad</label>
                                 <div class="control">
-                                    <input class="input" type="text" name="rutApoderado" value="1.230.546-0">
+                                    <input class="input" type="text" name="rutApoderado" value="">
                                     <label class="checkbox ml-2">
                                         <input type="checkbox" name="extranjeroSinRutApoderado" checked>
                                         Extranjero sin Rut
@@ -804,8 +804,8 @@
                             <div class="field">
                                 <label class="label required">Fecha. Nacimiento</label>
                                 <div class="control">
-                                    <input class="input" type="date" name="fechaNacimientoApoderado" value="1968-02-16">
-                                    <span id="edadApoderado">57.1 años.</span>
+                                    <input class="input" type="date" name="fechaNacimientoApoderado" value="">
+                                    <span id="edadApoderado"></span>
                                 </div>
                             </div>
                         </div>
@@ -813,7 +813,7 @@
                             <div class="field">
                                 <label class="label">Dirección: Calle/Pasaje/Avenida</label>
                                 <div class="control">
-                                    <input class="input" type="text" name="direccionApoderado" value="EL AZADON">
+                                    <input class="input" type="text" name="direccionApoderado" value="">
                                 </div>
                             </div>
                         </div>
@@ -821,7 +821,7 @@
                             <div class="field">
                                 <label class="label required">Dirección: Número</label>
                                 <div class="control">
-                                    <input class="input" type="text" name="numeroApoderado" value="2182">
+                                    <input class="input" type="text" name="numeroApoderado" value="">
                                 </div>
                             </div>
                         </div>
@@ -849,7 +849,7 @@
                             <div class="field">
                                 <label class="label">Teléfono</label>
                                 <div class="control">
-                                    <input class="input" type="text" name="telefonoApoderado" value="978467607">
+                                    <input class="input" type="text" name="telefonoApoderado" value="">
                                 </div>
                             </div>
                         </div>
@@ -917,7 +917,7 @@
                             <div class="field">
                                 <label class="label">Cargo</label>
                                 <div class="control">
-                                    <input class="input" type="text" name="cargoApoderado" value="DUEÑA DE CASA">
+                                    <input class="input" type="text" name="cargoApoderado">
                                 </div>
                             </div>
                         </div>
@@ -960,7 +960,7 @@
             <!-- Botón para guardar -->
             <div class="field mt-5">
                 <div class="control">
-                    <button class="button is-primary" id="guardar">Guardar Todo</button>
+                    <button class="button is-primary" id="btnGuardarTodo">Guardar Todo</button>
                 </div>
             </div>
         </div>

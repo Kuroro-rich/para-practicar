@@ -1,133 +1,386 @@
-document.addEventListener('DOMContentLoaded', function() {
-    inicializarAplicacion();
-});
-
-function inicializarAplicacion() {
-    if (document.getElementById('anioIngreso')) {
-        cargarAnosAcademicos();
-        // precargarAnio2025() se llama desde cargarAnosAcademicos() para evitar duplicación
-    } else {
-        console.error("Elemento 'anioIngreso' no encontrado");
+function mostrarToast(mensaje, tipo = 'is-info') {
+    // Crear elemento toast si no existe
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.position = 'fixed';
+        toastContainer.style.top = '20px';
+        toastContainer.style.right = '20px';
+        toastContainer.style.zIndex = '1000';
+        document.body.appendChild(toastContainer);
     }
-    
-    cargarEstablecimientos();
-    cargarComunas();
-    cargarNacionalidades();
-    cargarTodosLosCursos(); // Añadir esta línea
-    cargarPlanesAcademicos();
-    configurarEventos();
-    configurarSistemaPestanas();
-    validarSoloNumeros();
-    validarSoloTexto();
-    validarCamposNumericos();
+
+    // Crear toast
+    const toast = document.createElement('div');
+    toast.className = `notification ${tipo}`;
+    toast.style.marginBottom = '10px';
+    toast.style.minWidth = '250px';
+    toast.style.boxShadow = '0 3px 6px rgba(0,0,0,0.16)';
+
+    // Botón de cierre
+    const closeButton = document.createElement('button');
+    closeButton.className = 'delete';
+    closeButton.addEventListener('click', () => {
+        toastContainer.removeChild(toast);
+    });
+
+    // Contenido
+    toast.appendChild(closeButton);
+    toast.appendChild(document.createTextNode(mensaje));
+
+    // Añadir al container
+    toastContainer.appendChild(toast);
+
+    // Eliminar automáticamente después de 5 segundos
+    setTimeout(() => {
+        if (toastContainer.contains(toast)) {
+            toastContainer.removeChild(toast);
+        }
+    }, 5000);
 }
 
-function configurarEventos() {
-    // Evento para actualizar edad del apoderado
-    const fechaNacApoderado = document.querySelector('input[name="fechaNacimientoApoderado"]');
-    if (fechaNacApoderado) {
-        fechaNacApoderado.addEventListener('change', function() {
-            actualizarEdadApoderado(this.value);
-        });
-    }
-    
-    // Evento para guardar el formulario
-    const btnGuardar = document.getElementById("guardar");
-    if (btnGuardar) {
-        btnGuardar.addEventListener("click", guardarRegistroCompleto);
-    }
+function mostrarCarga(mensaje = 'Cargando...') {
+    // Crear overlay de carga
+    let cargaOverlay = document.getElementById('carga-overlay');
+    if (!cargaOverlay) {
+        cargaOverlay = document.createElement('div');
+        cargaOverlay.id = 'carga-overlay';
+        cargaOverlay.style.position = 'fixed';
+        cargaOverlay.style.top = '0';
+        cargaOverlay.style.left = '0';
+        cargaOverlay.style.width = '100%';
+        cargaOverlay.style.height = '100%';
+        cargaOverlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        cargaOverlay.style.display = 'flex';
+        cargaOverlay.style.justifyContent = 'center';
+        cargaOverlay.style.alignItems = 'center';
+        cargaOverlay.style.zIndex = '9999';
 
-    // Evento para cargar cursos al cambiar año académico
-    const selectAnio = document.getElementById('anioIngreso');
-    if (selectAnio) {
-        selectAnio.addEventListener('change', function() {
-            /* 
-            const idAnio = this.value;
-            if (!idAnio) return;
-            
-            const cursosSelect = document.getElementById('cursosSelect');
-            if (cursosSelect) {
-                cursosSelect.innerHTML = '<option value="">-- Seleccione un curso --</option>';
-                
-                fetch(`/api/cursos?id_ano=${idAnio}`)
-                    .then(response => response.json())
-                    .then(cursos => {
-                        if (cursos && Array.isArray(cursos)) {
-                            cursos.forEach(curso => {
-                                const option = document.createElement('option');
-                                option.value = curso.id_curso;
-                                option.textContent = curso.nombre_curso;
-                                cursosSelect.appendChild(option);
-                            });
-                        } else {
-                            console.error("Formato incorrecto en respuesta de cursos:", cursos);
-                        }
-                    })
-                    .catch(error => console.error('Error al cargar cursos:', error));
-            } else {
-                console.error("Elemento 'cursosSelect' no encontrado");
-            }
-            */
-        });
-    }
-    
-    // Otros eventos específicos
-    const hermanos = document.querySelector('input[name="hermanos"]');
-    if (hermanos) {
-        hermanos.addEventListener('change', actualizarCamposHermanos);
-    }
-    
-    const sinRutCheckbox = document.querySelector('input[name="sinRut"]');
-    if (sinRutCheckbox) {
-        sinRutCheckbox.addEventListener('change', manejarCheckboxSinRut);
-    }
-    
-    const sinInfoCheckbox = document.querySelector('input[name="sinInformacion"]');
-    if (sinInfoCheckbox) {
-        sinInfoCheckbox.addEventListener('change', manejarCheckboxSinInformacion);
-    }
-    
-    // Corregir el selector para el botón "Copiar como Apoderado"
-    const btnCopiarFamiliar = document.getElementById('btnCopiarComoApoderado');
-    if (btnCopiarFamiliar) {
-        console.log("Botón 'Copiar como Apoderado' encontrado, asignando evento");
-        btnCopiarFamiliar.addEventListener('click', copiarDatosFamiliarComoApoderado);
+        const contenido = document.createElement('div');
+        contenido.className = 'box has-text-centered';
+        contenido.style.minWidth = '300px';
+
+        const spinner = document.createElement('div');
+        spinner.className = 'loader is-loading';
+        spinner.style.height = '80px';
+        spinner.style.width = '80px';
+        spinner.style.margin = '0 auto 20px';
+
+        const textoMensaje = document.createElement('p');
+        textoMensaje.className = 'has-text-weight-bold';
+        textoMensaje.id = 'carga-mensaje';
+        textoMensaje.textContent = mensaje;
+
+        contenido.appendChild(spinner);
+        contenido.appendChild(textoMensaje);
+        cargaOverlay.appendChild(contenido);
+        document.body.appendChild(cargaOverlay);
     } else {
-        console.error("No se encontró el botón 'Copiar como Apoderado'");
+        document.getElementById('carga-mensaje').textContent = mensaje;
+        cargaOverlay.style.display = 'flex';
+    }
+}
+
+function ocultarCarga() {
+    const overlay = document.getElementById('carga-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar eventos de las pestañas
+    configurarEventosNavegacion();
+    
+    // Configurar evento para el botón de guardar
+    const btnGuardarTodo = document.getElementById('btnGuardarTodo');
+    if (btnGuardarTodo) {
+        btnGuardarTodo.addEventListener('click', guardarRegistroCompleto);
     }
     
-    const btnAgregarFamiliar = document.getElementById('agregarFamiliar');
+    // Configurar evento para el botón de copiar datos como apoderado
+    const btnCopiarComoApoderado = document.getElementById('btnCopiarComoApoderado');
+    if (btnCopiarComoApoderado) {
+        btnCopiarComoApoderado.addEventListener('click', copiarDatosComoApoderado);
+    }
+    
+    // Configurar evento para el botón de agregar familiar
+    const btnAgregarFamiliar = document.getElementById('btnAgregarFamiliar');
     if (btnAgregarFamiliar) {
         btnAgregarFamiliar.addEventListener('click', agregarFamiliarAdicional);
     }
     
-    const selectTipoApoderado = document.querySelector('select[name="tipoApoderado"]');
-    if (selectTipoApoderado) {
-        selectTipoApoderado.addEventListener('change', autocompletarApoderadoDesdeParentesco);
+    // Configurar evento para autocompletar apoderado desde tipo
+    const tipoApoderadoSelect = document.getElementById('tipoApoderado');
+    if (tipoApoderadoSelect) {
+        tipoApoderadoSelect.addEventListener('change', autocompletarApoderadoDesdeParentesco);
+    }
+    
+    // Configurar evento para checkbox sin RUT del familiar
+    const extranjeroSinRut = document.getElementById('extranjeroSinRut');
+    if (extranjeroSinRut) {
+        extranjeroSinRut.addEventListener('change', function() {
+            const rutFamiliar = document.getElementById('rutFamiliar');
+            if (rutFamiliar) {
+                rutFamiliar.value = this.checked ? 'SIN RUT' : '';
+                rutFamiliar.disabled = this.checked;
+            }
+        });
+    }
+    
+    // Configurar evento para checkbox sin información de establecimiento
+    const sinInformacion = document.getElementById('checkSinInformacion');
+    if (sinInformacion) {
+        sinInformacion.addEventListener('change', function() {
+            const establecimiento = document.getElementById('idEstablecimientoAnterior');
+            if (establecimiento) {
+                establecimiento.value = this.checked ? '-1' : '';
+                establecimiento.disabled = this.checked;
+            }
+        });
+    }
+    
+    // Inicializar aplicación
+    cargarAniosAcademicos();
+    cargarEstablecimientos();
+    cargarComunas();
+    cargarNacionalidades();
+    cargarTodosLosCursos();
+    cargarPlanesAcademicos();
+    cargarMotivosPostulacion();
+    validarSoloNumeros();
+    validarSoloTexto();
+    validarCamposNumericos();
+});
+
+// Función para configurar la navegación por pestañas
+function configurarEventosNavegacion() {
+    document.querySelectorAll('.tabs ul li').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remover clase 'is-active' de todos los tabs
+            document.querySelectorAll('.tabs ul li').forEach(t => {
+                t.classList.remove('is-active');
+            });
+            
+            // Ocultar todos los contenidos
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('is-active');
+            });
+            
+            // Activar el tab seleccionado
+            this.classList.add('is-active');
+            
+            // Mostrar el contenido correspondiente
+            const target = this.getAttribute('data-tab');
+            if (target) {
+                const content = document.getElementById(target);
+                if (content) {
+                    content.style.display = 'block';
+                    content.classList.add('is-active');
+                }
+            }
+        });
+    });
+    
+    // Inicialmente mostrar solo el primer tab
+    const tabs = document.querySelectorAll('.tabs ul li');
+    const contents = document.querySelectorAll('.tab-content');
+    
+    if (tabs.length > 0 && contents.length > 0) {
+        tabs.forEach((tab, index) => {
+            if (index === 0) {
+                tab.classList.add('is-active');
+            } else {
+                tab.classList.remove('is-active');
+            }
+        });
+        
+        contents.forEach((content, index) => {
+            if (index === 0) {
+                content.style.display = 'block';
+                content.classList.add('is-active');
+            } else {
+                content.style.display = 'none';
+                content.classList.remove('is-active');
+            }
+        });
     }
 }
 
-/**
- * Configura el sistema de navegación por pestañas
- */
-function configurarSistemaPestanas() {
-    const tabs = document.querySelectorAll(".tabs ul li");
-    const tabContents = document.querySelectorAll(".tab-content");
-
-    tabs.forEach(tab => {
-        tab.addEventListener("click", () => {
-            tabs.forEach(t => t.classList.remove("is-active"));
-            tabContents.forEach(tc => tc.classList.remove("is-active"));
-            tab.classList.add("is-active");
-            const target = tab.getAttribute("data-tab");
-            document.getElementById(target).classList.add("is-active");
+function guardarRegistroCompleto() {
+    try {
+        mostrarCarga('Guardando datos del registro...');
+        
+        // 1. Validar datos personales
+        if (!validarDatosPersonales()) {
+            ocultarCarga();
+            mostrarToast('Por favor complete todos los campos obligatorios en Datos Personales', 'is-danger');
+            const tabDatosPersonales = document.querySelector('[data-tab="datos-personales"]');
+            if (tabDatosPersonales) tabDatosPersonales.click();
+            return;
+        }
+        
+        // 2. Validar datos del apoderado
+        if (!validarDatosApoderado()) {
+            ocultarCarga();
+            mostrarToast('Por favor complete todos los campos obligatorios en Datos Apoderado', 'is-danger');
+            const tabDatosApoderado = document.querySelector('[data-tab="datos-apoderado"]');
+            if (tabDatosApoderado) tabDatosApoderado.click();
+            return;
+        }
+        
+        // 3. Recopilar datos de todos los formularios
+        const datosPersonales = obtenerDatosFormulario('form-datos-personales');
+        const datosFamiliares = obtenerDatosFamiliares();
+        const datosApoderado = obtenerDatosFormulario('form-datos-apoderado');
+        
+        // 4. Crear un objeto con todos los datos
+        const registroCompleto = {
+            alumno: datosPersonales,
+            familiares: datosFamiliares,
+            apoderado: datosApoderado
+        };
+        
+        console.log('Datos a enviar:', registroCompleto);
+        
+        // 5. Enviar los datos al servidor
+        fetch('/guardar-registro-completo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(registroCompleto)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            ocultarCarga();
+            if (data.success) {
+                mostrarToast(`Registro guardado con éxito. ID Alumno: ${data.idAlumno}, ID Apoderado: ${data.idApoderado}`, 'is-success');
+                
+                // Mostrar un modal con los IDs
+                setTimeout(() => {
+                    alert(`¡Registro completado con éxito!\n\nID Alumno: ${data.idAlumno}\nID Apoderado: ${data.idApoderado}`);
+                    
+                    // Opcional: redirigir a otra página
+                    window.location.href = '/listar';
+                }, 1000);
+            } else {
+                mostrarToast(`Error al guardar: ${data.message}`, 'is-danger');
+            }
+        })
+        .catch(error => {
+            ocultarCarga();
+            console.error('Error al guardar el registro:', error);
+            mostrarToast('Error al guardar el registro. Por favor, inténtelo de nuevo.', 'is-danger');
         });
-    });
+        
+    } catch (error) {
+        ocultarCarga();
+        console.error('Error en el proceso de guardar:', error);
+        mostrarToast('Error en el proceso de guardar', 'is-danger');
+    }
 }
 
-/**
- * Muestra mensaje al usuario
- */
+// Función para obtener todos los datos de un formulario
+function obtenerDatosFormulario(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return {};
+
+    const formData = new FormData(form);
+    const datos = {};
+    
+    formData.forEach((value, key) => {
+        // Manejar radios y checkboxes
+        if (form.querySelector(`input[name="${key}"][type="radio"]`)) {
+            datos[key] = value;
+        } else if (form.querySelector(`input[name="${key}"][type="checkbox"]`)) {
+            datos[key] = value === 'on' ? true : value;
+        } else {
+            datos[key] = value;
+        }
+    });
+    
+    return datos;
+}
+
+// Función para obtener datos de familiares (considerando que puede haber múltiples)
+function obtenerDatosFamiliares() {
+    const formFamiliares = document.getElementById('form-datos-familiares');
+    if (!formFamiliares) return [];
+    
+    // Para el primer familiar (obligatorio)
+    const familiar1 = {
+        parentesco: formFamiliares.querySelector('select[name="parentesco"]')?.value || '',
+        rut: formFamiliares.querySelector('input[name="rutFamiliar"]')?.value || '',
+        extranjeroSinRut: formFamiliares.querySelector('input[name="extranjeroSinRut"]')?.checked || false,
+        nombres: formFamiliares.querySelector('input[name="nombresFamiliar"]')?.value || '',
+        apellidoPaterno: formFamiliares.querySelector('input[name="apellidoPaternoFamiliar"]')?.value || '',
+        apellidoMaterno: formFamiliares.querySelector('input[name="apellidoMaternoFamiliar"]')?.value || '',
+        fechaNacimiento: formFamiliares.querySelector('input[name="fechaNacimientoFamiliar"]')?.value || '',
+        genero: formFamiliares.querySelector('select[name="generoFamiliar"]')?.value || '',
+        apoderadoSuplente: formFamiliares.querySelector('input[name="apoderadoSuplente"]')?.checked || false,
+        // Datos de trabajo
+        nombreEmpresa: formFamiliares.querySelector('input[name="nombreEmpresa"]')?.value || '',
+        cargoEmpresa: formFamiliares.querySelector('input[name="cargoEmpresa"]')?.value || '',
+        direccionTrabajo: formFamiliares.querySelector('input[name="direccionTrabajo"]')?.value || '',
+        telefonoTrabajo: formFamiliares.querySelector('input[name="telefonoTrabajo"]')?.value || '',
+        telefono: formFamiliares.querySelector('input[name="telefonoFamiliar2"]')?.value || ''
+    };
+    
+    // Obtener familiares adicionales si existen
+    const familiares = [familiar1];
+    
+    // Buscar contenedores de familiares adicionales
+    const contenedoresAdicionales = document.querySelectorAll('.datos-familiar');
+    contenedoresAdicionales.forEach((contenedor, index) => {
+        const numFamiliar = index + 2; // El primer familiar ya está incluido
+        
+        const familiar = {
+            parentesco: contenedor.querySelector(`select[name="parentesco_${numFamiliar}"]`)?.value || '',
+            rut: contenedor.querySelector(`input[name="rutFamiliar_${numFamiliar}"]`)?.value || '',
+            extranjeroSinRut: contenedor.querySelector(`input[name="extranjeroSinRut_${numFamiliar}"]`)?.checked || false,
+            nombres: contenedor.querySelector(`input[name="nombresFamiliar_${numFamiliar}"]`)?.value || '',
+            apellidoPaterno: contenedor.querySelector(`input[name="apellidoPaternoFamiliar_${numFamiliar}"]`)?.value || '',
+            apellidoMaterno: contenedor.querySelector(`input[name="apellidoMaternoFamiliar_${numFamiliar}"]`)?.value || '',
+            fechaNacimiento: contenedor.querySelector(`input[name="fechaNacimientoFamiliar_${numFamiliar}"]`)?.value || '',
+            genero: contenedor.querySelector(`select[name="generoFamiliar_${numFamiliar}"]`)?.value || '',
+            apoderadoSuplente: contenedor.querySelector(`input[name="apoderadoSuplente_${numFamiliar}"]`)?.checked || false,
+            // Datos de trabajo
+            nombreEmpresa: contenedor.querySelector(`input[name="nombreEmpresa_${numFamiliar}"]`)?.value || '',
+            cargoEmpresa: contenedor.querySelector(`input[name="cargoEmpresa_${numFamiliar}"]`)?.value || '',
+            direccionTrabajo: contenedor.querySelector(`input[name="direccionTrabajo_${numFamiliar}"]`)?.value || '',
+            telefonoTrabajo: contenedor.querySelector(`input[name="telefonoTrabajo_${numFamiliar}"]`)?.value || '',
+            telefono: contenedor.querySelector(`input[name="telefonoFamiliar_${numFamiliar}"]`)?.value || ''
+        };
+        
+        familiares.push(familiar);
+    });
+    
+    // Incluir también la información general familiar
+    const infoFamiliar = {
+        viveCon: formFamiliares.querySelector('select[name="viveCon"]')?.value || 'Ambos Padres',
+        tipoVivienda: formFamiliares.querySelector('select[name="tipoVivienda"]')?.value || '',
+        hermanos: formFamiliares.querySelector('input[name="hermanos"]')?.value || '0',
+        hermanosEstudiando: formFamiliares.querySelector('input[name="hermanosEstudiando"]')?.value || '0',
+        personas: formFamiliares.querySelector('input[name="personas"]')?.value || '1',
+        trabajadores: formFamiliares.querySelector('input[name="trabajadores"]')?.value || '0',
+        ingresoPesos: formFamiliares.querySelector('input[name="ingresoPesos"]')?.value || '0',
+        telefonoFamiliar: formFamiliares.querySelector('input[name="telefonoFamiliar"]')?.value || '',
+        nombreContactoFamiliar: formFamiliares.querySelector('input[name="nombreContactoFamiliar"]')?.value || ''
+    };
+    
+    familiares.infoFamiliar = infoFamiliar;
+    
+    return familiares;
+}
+
 function mostrarMensaje(mensaje, tipo = 'info') {
     if (tipo === 'success') {
         alert('✅ ' + mensaje);
@@ -138,9 +391,6 @@ function mostrarMensaje(mensaje, tipo = 'info') {
     }
 }
 
-/**
- * Control de botones durante operaciones
- */
 function deshabilitarBoton(btn, texto = 'Procesando...') {
     btn.disabled = true;
     btn.classList.add("is-loading");
@@ -156,9 +406,6 @@ function habilitarBoton(btn) {
     }
 }
 
-/**
- * Actualiza la edad del apoderado basado en la fecha de nacimiento
- */
 function actualizarEdadApoderado(fechaNacimiento) {
     if (!fechaNacimiento) return;
 
@@ -179,9 +426,6 @@ function actualizarEdadApoderado(fechaNacimiento) {
     document.getElementById('edadApoderado').textContent = `${edadConDecimal.toFixed(1)} años.`;
 }
 
-/**
- * Funciones de utilidad para texto
- */
 function reemplazaString(texto, busca, reemplaza) {
     while (texto.indexOf(busca) != -1) {
         texto = texto.replace(busca, reemplaza);
@@ -189,9 +433,6 @@ function reemplazaString(texto, busca, reemplaza) {
     return texto;
 }
 
-/**
- * Diagnóstico de respuestas para depuración
- */
 async function diagnosticarRespuesta(response, etiqueta) {
     try {
         const copia = response.clone();
@@ -200,7 +441,7 @@ async function diagnosticarRespuesta(response, etiqueta) {
         console.log(`Estado: ${response.status} ${response.statusText}`);
         console.log("Encabezados:", Object.fromEntries(response.headers.entries()));
         console.log("Cuerpo:", texto);
-        
+
         try {
             const json = JSON.parse(texto);
             console.log("Como JSON:", json);
@@ -215,9 +456,6 @@ async function diagnosticarRespuesta(response, etiqueta) {
     }
 }
 
-/**
- * Formatea un RUT con puntos y guión
- */
 function rutFormateado(rut) {
     if (!rut) return '';
     if (rut.toUpperCase() === 'SIN RUT') return rut;
@@ -243,15 +481,10 @@ function rutFormateado(rut) {
     return resultado + '-' + dv;
 }
 
-/**
- * Valida un RUT chileno
- * @param {string} x - RUT a validar
- * @returns {boolean} true si el RUT es válido
- */
 function isRut(x) {
     if (x === "") return true;
     if (x && x.toUpperCase() === 'SIN RUT') return true;
-    
+
     x = x.toString().replace(/\./g, '').replace(/-/g, '');
     if (x.length < 2) return false;
 
@@ -273,44 +506,18 @@ function isRut(x) {
     return dv === dvEsperado;
 }
 
-/**
- * Aplica validación de RUT en formularios
- */
-function validaRut(rut) {
-    const formDatosPersonales = document.getElementById("form-datos-personales");
-    const rutInput = formDatosPersonales.querySelector('input[name="rut"]');
-    const sinRutCheckbox = formDatosPersonales.querySelector('input[name="sinRut"]');
-
-    rutInput.value = rutFormateado(rut);
-
-    if (!sinRutCheckbox.checked) {
-        if (!isRut(rutInput.value)) {
-            alert("RUT inválido");
-            rutInput.focus();
-            rutInput.select();
-            rutInput.value = "";
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/**
- * Validaciones de campos
- */
 function validarSoloNumeros() {
     const camposTelefono = document.querySelectorAll('input[name="telefono"], input[name="telefonoApoderado"], input[name="telefonoTrabajoApoderado"], input[name="telefonoFamiliar"], input[name="telefonoFamiliar2"], input[name="telefonoTrabajo"]');
 
     camposTelefono.forEach(campo => {
-        campo.addEventListener('input', function(e) {
+        campo.addEventListener('input', function (e) {
             this.value = this.value.replace(/[^0-9]/g, '');
             if (this.value.length > 9) {
                 this.value = this.value.slice(0, 9);
             }
         });
 
-        campo.addEventListener('keypress', function(e) {
+        campo.addEventListener('keypress', function (e) {
             const charCode = (e.which) ? e.which : e.keyCode;
             if (charCode > 31 && (charCode < 48 || charCode > 57)) {
                 e.preventDefault();
@@ -324,11 +531,11 @@ function validarSoloTexto() {
     const camposTexto = document.querySelectorAll('input[name="nombres"], input[name="apellidoPaterno"], input[name="apellidoMaterno"], input[name="nombresApoderado"], input[name="apellidoPaternoApoderado"], input[name="apellidoMaternoApoderado"], input[name="nombreContacto"], input[name="nombresFamiliar"], input[name="apellidoPaternoFamiliar"], input[name="apellidoMaternoFamiliar"], input[name="nombreContactoFamiliar"]');
 
     camposTexto.forEach(campo => {
-        campo.addEventListener('input', function(e) {
+        campo.addEventListener('input', function (e) {
             this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
         });
 
-        campo.addEventListener('keypress', function(e) {
+        campo.addEventListener('keypress', function (e) {
             const charCode = (e.which) ? e.which : e.keyCode;
             const regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/;
             if (!regex.test(String.fromCharCode(charCode))) {
@@ -345,7 +552,7 @@ function validarCamposNumericos() {
     camposNumericos.forEach(campo => {
         campo.type = 'text';
 
-        campo.addEventListener('input', function(e) {
+        campo.addEventListener('input', function (e) {
             this.value = this.value.replace(/[^0-9]/g, '');
             this.value = this.value.replace(/e/gi, '');
 
@@ -360,7 +567,7 @@ function validarCamposNumericos() {
             }
         });
 
-        campo.addEventListener('keypress', function(e) {
+        campo.addEventListener('keypress', function (e) {
             const charCode = (e.which) ? e.which : e.keyCode;
             if (charCode === 101 || charCode === 69 || (charCode > 31 && (charCode < 48 || charCode > 57))) {
                 e.preventDefault();
@@ -368,7 +575,7 @@ function validarCamposNumericos() {
             }
         });
 
-        campo.addEventListener('paste', function(e) {
+        campo.addEventListener('paste', function (e) {
             let pasteData = (e.clipboardData || window.clipboardData).getData('text');
             if (/[^0-9]/.test(pasteData)) {
                 e.preventDefault();
@@ -378,9 +585,6 @@ function validarCamposNumericos() {
     });
 }
 
-/**
- * Actualiza los campos de hermanos según el número ingresado
- */
 function actualizarCamposHermanos() {
     const numeroHermanos = parseInt(this.value) || 0;
     const contenedorHermanos1 = document.getElementById('contenedor-hermanos');
@@ -407,9 +611,6 @@ function actualizarCamposHermanos() {
     }
 }
 
-/**
- * Maneja los checkbox de "Sin RUT" e "Sin información"
- */
 function manejarCheckboxSinRut() {
     const campoRut = document.getElementById('rutFamiliar');
     if (this.checked) {
@@ -432,14 +633,11 @@ function manejarCheckboxSinInformacion() {
     }
 }
 
-/**
- * Funciones para manejar familiares y apoderados
- */
 function copiarDatosFamiliarComoApoderado(e) {
     e.preventDefault();
-    
+
     console.log("Iniciando copia de datos de familiar a apoderado...");
-    
+
     // Obtener los valores de los campos del familiar
     // Usar selectores más flexibles que coincidan con la estructura de la página
     const parentescoSelect = document.querySelector('select[name^="parentesco"]');
@@ -450,7 +648,7 @@ function copiarDatosFamiliarComoApoderado(e) {
     const extranjeroCheckbox = document.querySelector('input[type="checkbox"][name^="extranjeroSinRut"]');
     const fechaNacimientoInput = document.querySelector('input[type="date"][name^="fechaNacimientoFamiliar"]');
     const generoSelect = document.querySelector('select:has(option[value="Masculino"])');
-    
+
     // Verificar si encontramos los elementos necesarios
     if (!nombresFamiliarInput || !apellidoPaternoFamiliarInput || !apellidoMaternoFamiliarInput) {
         console.error("No se encontraron los campos del familiar necesarios", {
@@ -461,13 +659,13 @@ function copiarDatosFamiliarComoApoderado(e) {
         mostrarMensaje("Error al encontrar los campos del familiar. Por favor contacte al administrador.", "error");
         return;
     }
-    
+
     // Verificar que los campos obligatorios tengan datos
     if (!nombresFamiliarInput.value || !apellidoPaternoFamiliarInput.value) {
         mostrarMensaje("Por favor complete al menos nombres y apellido paterno del familiar antes de copiar", "error");
         return;
     }
-    
+
     console.log("Datos encontrados del familiar:", {
         parentesco: parentescoSelect?.value,
         nombres: nombresFamiliarInput.value,
@@ -483,16 +681,16 @@ function copiarDatosFamiliarComoApoderado(e) {
                 tipoApoderadoSelect.value = parentescoSelect.value;
             }
         }
-        
+
         // Asignar valores a los campos de apoderado
         asignarValorSeguro('input[name="nombresApoderado"]', nombresFamiliarInput.value);
         asignarValorSeguro('input[name="apellidoPaternoApoderado"]', apellidoPaternoFamiliarInput.value);
         asignarValorSeguro('input[name="apellidoMaternoApoderado"]', apellidoMaternoFamiliarInput.value);
-        
+
         if (rutFamiliarInput) {
             asignarValorSeguro('input[name="rutApoderado"]', rutFamiliarInput.value);
         }
-        
+
         // Manejar checkbox de extranjero sin RUT
         if (extranjeroCheckbox) {
             const extranjeroApoderado = document.querySelector('input[name="extranjeroSinRutApoderado"]');
@@ -500,7 +698,7 @@ function copiarDatosFamiliarComoApoderado(e) {
                 extranjeroApoderado.checked = extranjeroCheckbox.checked;
             }
         }
-        
+
         // Copiar género
         if (generoSelect && generoSelect.value) {
             const generoValue = generoSelect.value;
@@ -509,24 +707,24 @@ function copiarDatosFamiliarComoApoderado(e) {
                 radioGenero.checked = true;
             }
         }
-        
+
         // Copiar fecha de nacimiento
         if (fechaNacimientoInput && fechaNacimientoInput.value) {
             asignarValorSeguro('input[name="fechaNacimientoApoderado"]', fechaNacimientoInput.value);
             actualizarEdadApoderado(fechaNacimientoInput.value);
         }
-        
+
         // Copiar datos de trabajo
         asignarValorSeguro('input[name="empresaApoderado"]', document.querySelector('input[name="nombreEmpresa"]')?.value || '');
         asignarValorSeguro('input[name="cargoApoderado"]', document.querySelector('input[name="cargoEmpresa"]')?.value || '');
         asignarValorSeguro('input[name="direccionTrabajoApoderado"]', document.querySelector('input[name="direccionTrabajo"]')?.value || '');
         asignarValorSeguro('input[name="telefonoTrabajoApoderado"]', document.querySelector('input[name="telefonoTrabajo"]')?.value || '');
-        
+
         // Copiar teléfono
         asignarValorSeguro('input[name="telefonoApoderado"]', document.querySelector('input[name^="telefonoFamiliar"]')?.value || '');
-        
+
         console.log("Datos copiados exitosamente");
-        
+
         // Cambiar a pestaña de apoderado - usando múltiples estrategias
         const tabApoderado = document.querySelector('[data-tab="datos-apoderado"]');
         if (tabApoderado) {
@@ -543,7 +741,7 @@ function copiarDatosFamiliarComoApoderado(e) {
                 }
             }
         }
-        
+
         mostrarMensaje("Datos copiados al apoderado correctamente", "success");
     } catch (error) {
         console.error("Error al copiar datos:", error);
@@ -568,7 +766,7 @@ function agregarFamiliarAdicional(e) {
     // Verificar campos obligatorios
     const campos = ['parentesco', 'nombresFamiliar', 'apellidoPaternoFamiliar', 'apellidoMaternoFamiliar'];
     let faltanCampos = false;
-    
+
     campos.forEach(campo => {
         const elemento = document.getElementById(campo);
         if (!elemento.value) {
@@ -684,163 +882,73 @@ function agregarFamiliarAdicional(e) {
 }
 
 function autocompletarApoderadoDesdeParentesco() {
-    const seleccion = this.value; // Ej: "Padre", "Madre", etc.
-    console.log("Tipo de apoderado seleccionado:", seleccion);
-    
-    // Mapeo de valores de texto a valores numéricos de parentesco
-    const mapaParentescos = {
-        "Padre": "1",
-        "Madre": "2",
-        "Abuelo/a": "3",
-        "Hermano/a": "4",
-        "Tío/a": "5",
-        "Otro": "6"
-    };
-    
-    // Obtener el valor numérico correspondiente
-    const valorParentescoNumerico = mapaParentescos[seleccion];
-    console.log("Buscando familiar con parentesco valor:", valorParentescoNumerico);
-    
-    // También buscar por texto para mayor compatibilidad
-    const parentescoSelects = document.querySelectorAll('select[name^="parentesco"]');
-    
-    let familiarEncontrado = false;
-    
-    // Primero intentar buscar por valor numérico
-    parentescoSelects.forEach(select => {
-        console.log("Evaluando select:", select.name, "con valor:", select.value);
+    try {
+        const tipoApoderadoSelect = document.getElementById('tipoApoderado');
+        const seleccion = tipoApoderadoSelect.value;
         
-        // Comparar tanto con el valor numérico como con el valor de texto
-        if (select.value === valorParentescoNumerico || select.value === seleccion) {
-            familiarEncontrado = true;
-            console.log("¡Coincidencia encontrada!");
-
-            // Determinar el sufijo del familiar
-            const nombreInput = select.name;
-            const esPrimero = nombreInput === "parentesco";
-            const sufijo = esPrimero ? "" : nombreInput.substring(nombreInput.indexOf("_"));
-
-            console.log("Sufijo determinado:", sufijo);
-
+        console.log("Tipo de apoderado seleccionado:", seleccion);
+        if (!seleccion) return;
+        
+        // Mapeo de valores de texto a valores del parentesco en la base de datos
+        const mapaParentescos = {
+            "Padre": "1",
+            "Madre": "2",
+            "Abuelo/a": "3",
+            "Tío/a": "5",
+            "Otro": "6"
+        };
+        
+        const valorParentesco = mapaParentescos[seleccion];
+        console.log("Buscando familiar con parentesco valor:", valorParentesco);
+        
+        // Buscar el familiar con el parentesco correspondiente
+        const familiarSelect = document.querySelector('select[name="parentesco"]');
+        if (familiarSelect && (familiarSelect.value === valorParentesco || familiarSelect.value === seleccion)) {
             // Copiar datos al apoderado
-            const nombresFamiliarInput = document.querySelector(`input[name="nombresFamiliar${sufijo}"]`);
-            if (nombresFamiliarInput) {
-                document.querySelector('input[name="nombresApoderado"]').value = nombresFamiliarInput.value || '';
-            }
-
-            const apellidoPaternoInput = document.querySelector(`input[name="apellidoPaternoFamiliar${sufijo}"]`);
-            if (apellidoPaternoInput) {
-                document.querySelector('input[name="apellidoPaternoApoderado"]').value = apellidoPaternoInput.value || '';
-            }
-
-            const apellidoMaternoInput = document.querySelector(`input[name="apellidoMaternoFamiliar${sufijo}"]`);
-            if (apellidoMaternoInput) {
-                document.querySelector('input[name="apellidoMaternoApoderado"]').value = apellidoMaternoInput.value || '';
-            }
-
-            const rutFamiliarInput = document.querySelector(`input[name="rutFamiliar${sufijo}"]`);
-            if (rutFamiliarInput) {
-                document.querySelector('input[name="rutApoderado"]').value = rutFamiliarInput.value || '';
-                
-                // También copiar el estado "extranjero sin RUT"
-                const extranjeroCheckbox = document.querySelector(`input[name="extranjeroSinRut${sufijo}"]`);
-                const apoderadoExtranjeroCheckbox = document.querySelector('input[name="extranjeroSinRutApoderado"]');
-                if (extranjeroCheckbox && apoderadoExtranjeroCheckbox) {
-                    apoderadoExtranjeroCheckbox.checked = extranjeroCheckbox.checked;
-                }
-            }
-
-            // Fecha de nacimiento
-            const fechaNacimientoInput = document.querySelector(`input[name="fechaNacimientoFamiliar${sufijo}"]`);
-            if (fechaNacimientoInput && fechaNacimientoInput.value) {
-                const fechaApoderado = document.querySelector('input[name="fechaNacimientoApoderado"]');
-                if (fechaApoderado) {
-                    fechaApoderado.value = fechaNacimientoInput.value;
-                    // Actualizar edad si existe la función
-                    if (typeof actualizarEdadApoderado === "function") {
-                        actualizarEdadApoderado(fechaNacimientoInput.value);
-                    }
-                }
-            }
-
+            const nombresFamiliar = document.querySelector('input[name="nombresFamiliar"]').value || '';
+            const apellidoPaterno = document.querySelector('input[name="apellidoPaternoFamiliar"]').value || '';
+            const apellidoMaterno = document.querySelector('input[name="apellidoMaternoFamiliar"]').value || '';
+            const rutFamiliar = document.querySelector('input[name="rutFamiliar"]').value || '';
+            const esSinRut = document.querySelector('input[name="extranjeroSinRut"]')?.checked || false;
+            
+            // Asignar valores al apoderado
+            document.querySelector('input[name="nombresApoderado"]').value = nombresFamiliar;
+            document.querySelector('input[name="apellidoPaternoApoderado"]').value = apellidoPaterno;
+            document.querySelector('input[name="apellidoMaternoApoderado"]').value = apellidoMaterno;
+            document.querySelector('input[name="rutApoderado"]').value = rutFamiliar;
+            
+            // Checkbox de extranjero sin RUT
+            const apoderadoSinRut = document.querySelector('input[name="extranjeroSinRutApoderado"]');
+            if (apoderadoSinRut) apoderadoSinRut.checked = esSinRut;
+            
             // Género
-            const generoSelect = document.querySelector(`select[name="generoFamiliar${sufijo}"]`);
-            if (generoSelect) {
-                const generoValue = generoSelect.value;
-                const radioGeneroM = document.querySelector('input[name="generoApoderado"][value="1"]');
-                const radioGeneroF = document.querySelector('input[name="generoApoderado"][value="2"]');
+            const generoFamiliar = document.querySelector('select[name="generoFamiliar"]')?.value;
+            if (generoFamiliar) {
+                const generoMasculino = document.querySelector('input[name="generoApoderado"][value="1"]');
+                const generoFemenino = document.querySelector('input[name="generoApoderado"][value="2"]');
                 
-                if (generoValue === "1" && radioGeneroM) {
-                    radioGeneroM.checked = true;
-                } else if (generoValue === "2" && radioGeneroF) {
-                    radioGeneroF.checked = true;
-                }
-            }
-
-            // Datos de trabajo
-            const empresaInput = document.querySelector(`input[name="nombreEmpresa${sufijo}"]`) || document.querySelector(`input[name="nombreEmpresa"]`);
-            if (empresaInput) {
-                document.querySelector('input[name="empresaApoderado"]').value = empresaInput.value || '';
-            }
-
-            const cargoInput = document.querySelector(`input[name="cargoEmpresa${sufijo}"]`) || document.querySelector(`input[name="cargoEmpresa"]`);
-            if (cargoInput) {
-                document.querySelector('input[name="cargoApoderado"]').value = cargoInput.value || '';
-            }
-
-            const direccionTrabajoInput = document.querySelector(`input[name="direccionTrabajo${sufijo}"]`) || document.querySelector(`input[name="direccionTrabajo"]`);
-            if (direccionTrabajoInput) {
-                document.querySelector('input[name="direccionTrabajoApoderado"]').value = direccionTrabajoInput.value || '';
-            }
-
-            const telefonoTrabajoInput = document.querySelector(`input[name="telefonoTrabajo${sufijo}"]`) || document.querySelector(`input[name="telefonoTrabajo"]`);
-            if (telefonoTrabajoInput) {
-                document.querySelector('input[name="telefonoTrabajoApoderado"]').value = telefonoTrabajoInput.value || '';
-            }
-
-            // Teléfono personal
-            const telefonoInput = document.querySelector(`input[name="telefonoFamiliar${sufijo}"]`) || document.querySelector(`input[name="telefonoFamiliar2${sufijo}"]`) || document.querySelector(`input[name="telefonoFamiliar"]`) || document.querySelector(`input[name="telefonoFamiliar2"]`);
-            if (telefonoInput) {
-                document.querySelector('input[name="telefonoApoderado"]').value = telefonoInput.value || '';
+                if (generoFamiliar === "1" && generoMasculino) generoMasculino.checked = true;
+                else if (generoFamiliar === "2" && generoFemenino) generoFemenino.checked = true;
             }
             
-            mostrarMensaje(`Datos del familiar (${seleccion}) copiados al apoderado`, "success");
-            return;
+            // Datos adicionales
+            document.querySelector('input[name="empresaApoderado"]').value = document.querySelector('input[name="nombreEmpresa"]')?.value || '';
+            document.querySelector('input[name="cargoApoderado"]').value = document.querySelector('input[name="cargoEmpresa"]')?.value || '';
+            document.querySelector('input[name="direccionTrabajoApoderado"]').value = document.querySelector('input[name="direccionTrabajo"]')?.value || '';
+            document.querySelector('input[name="telefonoTrabajoApoderado"]').value = document.querySelector('input[name="telefonoTrabajo"]')?.value || '';
+            document.querySelector('input[name="telefonoApoderado"]').value = document.querySelector('input[name="telefonoFamiliar2"]')?.value || '';
+            
+            // Mostrar mensaje de éxito
+            mostrarToast(`Datos del familiar (${seleccion}) copiados como apoderado`, 'is-success');
+        } else {
+            mostrarToast(`No se encontró un familiar con parentesco ${seleccion}`, 'is-warning');
         }
-    });
-
-    if (!familiarEncontrado) {
-        mostrarMensaje(`No se encontró ningún familiar con parentesco ${seleccion}`, "info");
+    } catch (error) {
+        console.error("Error al autocompletar apoderado:", error);
+        mostrarToast('Error al autocompletar los datos del apoderado', 'is-danger');
     }
 }
 
-/**
- * Funciones globales para acceso desde HTML
- */
-window.marcarSinRut = function(checkbox, id) {
-    const rutInput = document.querySelector(`input[name="rutFamiliar_${id}"]`);
-    if (checkbox.checked) {
-        rutInput.value = 'SIN RUT';
-        rutInput.disabled = true;
-    } else {
-        rutInput.value = '';
-        rutInput.disabled = false;
-    }
-};
-
-window.eliminarFamiliar = function(id) {
-    const familiar = document.getElementById(`familiar-${id}`);
-    if (familiar) {
-        if (confirm(`¿Está seguro de eliminar el familiar ${id}?`)) {
-            familiar.remove();
-            mostrarMensaje(`Familiar ${id} eliminado`, "info");
-        }
-    }
-};
-
-/**
- * Funciones de carga de datos desde el servidor
- */
 function cargarEstablecimientos() {
     fetch('/obtener-establecimientos')
         .then(response => response.json())
@@ -902,7 +1010,7 @@ function cargarComunas() {
 function cargarNacionalidades() {
     fetch('/obtener-nacionalidades')
         .then(response => response.json())
-        .then(nacionalidades => { 
+        .then(nacionalidades => {
             const nacionalidadSelect = document.querySelector('select[name="idNacionalidad"]');
             if (nacionalidadSelect) {
                 nacionalidadSelect.innerHTML = '<option value="">Seleccione nacionalidad</option>';
@@ -928,23 +1036,73 @@ function cargarNacionalidades() {
 }
 
 function cargarMotivosPostulacion() {
+    // Usamos ruta correcta y manejo apropiado de errores
     fetch('/obtener-motivos-postulacion')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(motivos => {
             const motivoSelect = document.querySelector('select[name="motivoPostulacion"]');
             if (motivoSelect) {
                 motivoSelect.innerHTML = '<option value="">*** SELECCIONE UNA OPCIÓN ***</option>';
 
-                motivos.forEach(motivo => {
-                    const option = document.createElement('option');
-                    option.value = motivo.id_motivo;
-                    option.textContent = motivo.descripcion;
-                    motivoSelect.appendChild(option);
-                });
+                // Verificamos que hay datos
+                if (motivos && Array.isArray(motivos) && motivos.length > 0) {
+                    motivos.forEach(motivo => {
+                        const option = document.createElement('option');
+                        option.value = motivo.id_motivo || motivo.id;
+                        option.textContent = motivo.descripcion || motivo.nombre;
+                        motivoSelect.appendChild(option);
+                    });
+                    console.log(`Cargados ${motivos.length} motivos de postulación`);
+                } else {
+                    console.warn("No se recibieron motivos de postulación o el formato es incorrecto");
+                    
+                    // Añadimos algunos valores por defecto
+                    const valoresPorDefecto = [
+                        {id: 1, nombre: "Recomendación familiar"},
+                        {id: 2, nombre: "Cercanía al domicilio"},
+                        {id: 3, nombre: "Proyecto educativo"},
+                        {id: 4, nombre: "Prestigio académico"},
+                        {id: 5, nombre: "Valores y formación"}
+                    ];
+                    
+                    valoresPorDefecto.forEach(motivo => {
+                        const option = document.createElement('option');
+                        option.value = motivo.id;
+                        option.textContent = motivo.nombre;
+                        motivoSelect.appendChild(option);
+                    });
+                }
+            } else {
+                console.warn("No se encontró el selector de motivo de postulación");
             }
         })
         .catch(error => {
             console.error('Error al cargar motivos de postulación:', error);
+            
+            // Si falla la carga, añadimos valores por defecto
+            const motivoSelect = document.querySelector('select[name="motivoPostulacion"]');
+            if (motivoSelect) {
+                motivoSelect.innerHTML = '<option value="">*** SELECCIONE UNA OPCIÓN ***</option>';
+                const valoresPorDefecto = [
+                    {id: 1, nombre: "Recomendación familiar"},
+                    {id: 2, nombre: "Cercanía al domicilio"},
+                    {id: 3, nombre: "Proyecto educativo"},
+                    {id: 4, nombre: "Prestigio académico"},
+                    {id: 5, nombre: "Valores y formación"}
+                ];
+                
+                valoresPorDefecto.forEach(motivo => {
+                    const option = document.createElement('option');
+                    option.value = motivo.id;
+                    option.textContent = motivo.nombre;
+                    motivoSelect.appendChild(option);
+                });
+            }
         });
 }
 
@@ -960,7 +1118,7 @@ function cargarPlanesAcademicos() {
             const selectPlan = document.getElementById('plan');
             if (selectPlan) {
                 selectPlan.innerHTML = '<option value="">Seleccione un plan</option>';
-                
+
                 if (planes && planes.length > 0) {
                     // Ordenar planes por nombre/descripción
                     planes.sort((a, b) => {
@@ -968,7 +1126,7 @@ function cargarPlanesAcademicos() {
                         const textoB = b.nombre_plan || b.descripcion || '';
                         return textoA.localeCompare(textoB);
                     });
-                    
+
                     // Agregar todos los planes al select
                     planes.forEach(plan => {
                         const option = document.createElement('option');
@@ -976,7 +1134,7 @@ function cargarPlanesAcademicos() {
                         option.textContent = plan.nombre_plan || plan.descripcion;
                         selectPlan.appendChild(option);
                     });
-                    
+
                     console.log(`Cargados ${planes.length} planes académicos`);
                 } else {
                     console.warn("No se encontraron planes académicos");
@@ -994,9 +1152,9 @@ function cargarPlanesAcademicos() {
         });
 }
 
-// Añadir después de las demás funciones de carga
 function cargarTodosLosCursos() {
-    fetch('/obtener-cursos')
+    // Intentar usar el año 2025 por defecto
+    fetch('/obtener-cursos?anio=2025')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
@@ -1004,97 +1162,108 @@ function cargarTodosLosCursos() {
             return response.json();
         })
         .then(cursos => {
-            const cursosSelect = document.getElementById('cursosSelect');
+            // Cambio de cursosSelect a idCurso
+            const cursosSelect = document.getElementById('idCurso');
             if (cursosSelect) {
                 cursosSelect.innerHTML = '<option value="">-- Seleccione curso --</option>';
-                
-                // Usar todos los cursos sin filtrar por año
+
                 if (cursos && cursos.length > 0) {
-                    // Agrupar por año académico y luego por nivel
-                    const cursosPorAno = {};
-                    
-                    // Primero: agrupar cursos por año académico
+                    // Crear un array para agrupar por nivel
+                    const nivelesPorCurso = {};
+
+                    // Agrupar los cursos por nivel (extraer parte numérica)
                     cursos.forEach(curso => {
-                        if (!cursosPorAno[curso.id_ano]) {
-                            cursosPorAno[curso.id_ano] = {};
+                        // Extraer el nivel básico (ej: "1° BÁSICO" de "1° BÁSICO A")
+                        const nivelMatch = curso.nombre_curso.match(/^([0-9]+[°º]?\s+[A-ZÁ-ÚÑ]+)/i);
+                        const nivel = nivelMatch ? nivelMatch[0] : curso.nombre_curso;
+
+                        // Agrupar por nivel
+                        if (!nivelesPorCurso[nivel]) {
+                            nivelesPorCurso[nivel] = [];
                         }
-                        
-                        // Extraer solo el nivel sin la letra/sección
-                        const nivelBase = curso.nombre_curso.replace(/([0-9]+\s+[A-ZÑÁÉÍÓÚ]+)(\s+[A-Z])?/i, '$1').trim();
-                        
-                        // Solo guardar el primer curso de cada nivel
-                        if (!cursosPorAno[curso.id_ano][nivelBase]) {
-                            cursosPorAno[curso.id_ano][nivelBase] = curso;
-                        }
+
+                        nivelesPorCurso[nivel].push(curso);
                     });
-                    
-                    // Agregar los cursos al select, agrupados por año
-                    Object.keys(cursosPorAno).forEach(idAno => {
-                        // Crear el grupo para este año
+
+                    // Obtener niveles ordenados
+                    const niveles = Object.keys(nivelesPorCurso).sort((a, b) => {
+                        // Extraer números de niveles para ordenar correctamente
+                        const numA = parseInt(a.match(/\d+/) || [0]);
+                        const numB = parseInt(b.match(/\d+/) || [0]);
+
+                        return numA - numB;
+                    });
+
+                    // Crear optgroup para cada nivel
+                    niveles.forEach(nivel => {
                         const optgroup = document.createElement('optgroup');
-                        optgroup.label = `Año académico ID: ${idAno}`;
-                        
-                        // Obtener los niveles únicos y ordenarlos
-                        const nivelesUnicos = Object.values(cursosPorAno[idAno]);
-                        nivelesUnicos.sort((a, b) => {
-                            // Extraer número de nivel para ordenar
-                            const numA = parseInt(a.nombre_curso.match(/(\d+)/)?.[0] || 0);
-                            const numB = parseInt(b.nombre_curso.match(/(\d+)/)?.[0] || 0);
-                            
-                            if (numA !== numB) return numA - numB;
-                            
-                            // Si los números son iguales, ordenar por nombre
-                            return a.nombre_curso.localeCompare(b.nombre_curso);
-                        });
-                        
-                        // Agregar cada nivel único de este año
-                        nivelesUnicos.forEach(curso => {
+                        optgroup.label = nivel;
+
+                        // Agregar cada curso de este nivel
+                        nivelesPorCurso[nivel].forEach(curso => {
                             const option = document.createElement('option');
                             option.value = curso.id_curso;
-                            
-                            // Mostrar solo el nivel básico (1 AÑO, 2 AÑO, etc.)
-                            const nivelBase = curso.nombre_curso.replace(/([0-9]+\s+[A-ZÑÁÉÍÓÚ]+)(\s+[A-Z])?/i, '$1').trim();
-                            option.textContent = nivelBase;
-                            
+                            option.textContent = curso.nombre_curso;
                             optgroup.appendChild(option);
                         });
-                        
+
                         cursosSelect.appendChild(optgroup);
                     });
-                    
-                    console.log(`Cargados niveles únicos de cursos`);
+
+                    console.log(`Cargados ${cursos.length} cursos agrupados por nivel`);
                 } else {
                     console.warn("No se encontraron cursos");
                 }
             } else {
-                console.error("No se encontró el elemento 'cursosSelect'");
+                // Mensaje de error actualizado
+                console.warn("No se encontró el elemento 'idCurso'");
             }
         })
-        .catch(error => console.error('Error al cargar cursos:', error));
+        .catch(error => {
+            console.error('Error al cargar cursos:', error);
+            // Si falla con el año 2025, intentar obtener todos los cursos
+            fetch('/obtener-cursos')
+                .then(response => response.json())
+                .then(cursos => {
+                    // También actualizar aquí idCurso
+                    const cursosSelect = document.getElementById('idCurso');
+                    if (cursosSelect && cursos.length > 0) {
+                        cursosSelect.innerHTML = '<option value="">-- Seleccione curso --</option>';
+                        cursos.forEach(curso => {
+                            const option = document.createElement('option');
+                            option.value = curso.id_curso;
+                            option.textContent = curso.nombre_curso;
+                            cursosSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(err => console.error('Error al obtener todos los cursos:', err));
+        });
 }
 
-function cargarAnosAcademicos() {
-    const selectAnio = document.getElementById('anioIngreso');
-    if (!selectAnio) {
-        console.error("Elemento 'anioIngreso' no encontrado al cargar años académicos");
-        return;
-    }
-    
+function cargarAniosAcademicos() {
     fetch('/obtener-anos')
-        .then(response => response.json())
-        .then(anos => {
-            if (!selectAnio) return;
-            
-            selectAnio.innerHTML = '<option value="">-- Seleccione un año académico --</option>';
-            anos.forEach(ano => {
-                const option = document.createElement('option');
-                option.value = ano.id_ano;
-                option.textContent = ano.nombre_ano;
-                selectAnio.appendChild(option);
-            });
-            
-            // Llamar a precargarAnio2025 solo aquí, no duplicadamente
-            precargarAnio2025();
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            return response.json();
+        })
+        .then(anios => {
+            const aniosSelect = document.getElementById('idAno');
+            if (aniosSelect) {
+                aniosSelect.innerHTML = '<option value="">-- Seleccione año académico --</option>';
+
+                anios.forEach(anio => {
+                    const option = document.createElement('option');
+                    option.value = anio.id_ano;
+                    option.textContent = anio.nombre_ano;
+                    aniosSelect.appendChild(option);
+                });
+
+                // Después de cargar los años, precargar 2025 si está disponible
+                precargarAnio2025();
+            }
         })
         .catch(error => {
             console.error('Error al cargar años académicos:', error);
@@ -1102,165 +1271,191 @@ function cargarAnosAcademicos() {
 }
 
 function precargarAnio2025() {
-    const selectAnio = document.getElementById('anioIngreso');
+    const selectAnio = document.getElementById('idAno'); // CORREGIDO: anioIngreso -> idAno
     if (!selectAnio || !selectAnio.options || selectAnio.options.length <= 1) {
-        console.error("Elemento 'anioIngreso' no disponible o sin opciones");
+        console.error("Elemento 'idAno' no disponible o sin opciones"); // CORREGIDO: anioIngreso -> idAno
         return;
     }
-    
+
     // Buscar la opción que contiene "2025"
     let encontrado = false;
     for (let i = 0; i < selectAnio.options.length; i++) {
         if (selectAnio.options[i].textContent.includes('2025')) {
             selectAnio.selectedIndex = i;
             encontrado = true;
-            
+
             // Disparar el evento change manualmente para cargar cursos
             const event = new Event('change');
             selectAnio.dispatchEvent(event);
             break;
         }
     }
-    
+
     if (!encontrado) {
         console.warn("No se encontró el año 2025 en las opciones");
     }
 }
 
-/**
- * Función principal para guardar el registro completo
- */
-async function guardarRegistroCompleto(e) {
-    if (e) e.preventDefault(); // Prevenir comportamiento por defecto
+function validarDatosPersonales() {
+    // Validar campos obligatorios de datos personales
+    const camposObligatorios = [
+        {name: 'nombres', label: 'Nombres'},
+        {name: 'apellidoPaterno', label: 'Apellido Paterno'},
+        {name: 'apellidoMaterno', label: 'Apellido Materno'},
+        {name: 'idAno', label: 'Año de Ingreso'},
+        {name: 'idCurso', label: 'Curso'}
+    ];
+
+    for (const campo of camposObligatorios) {
+        const elemento = document.querySelector(`[name="${campo.name}"]`);
+        if (!elemento || !elemento.value.trim()) {
+            mostrarToast(`El campo ${campo.label} es obligatorio`, 'is-danger');
+            return false;
+        }
+    }
+
+    // Validar RUT (si no es extranjero sin RUT)
+    const sinRut = document.querySelector('input[name="sinRut"]')?.checked;
+    const rut = document.querySelector('input[name="rut"]')?.value;
+
+    if (!sinRut && (!rut || !isRut(rut.trim()))) {
+        mostrarToast('El RUT no es válido', 'is-danger');
+        return false;
+    }
+
+    return true;
+}
+
+function validarDatosApoderado() {
+    // Validar campos obligatorios del apoderado
+    const camposObligatorios = [
+        {name: 'nombresApoderado', label: 'Nombres del apoderado'},
+        {name: 'apellidoPaternoApoderado', label: 'Apellido Paterno del apoderado'},
+        {name: 'apellidoMaternoApoderado', label: 'Apellido Materno del apoderado'}
+    ];
+
+    for (const campo of camposObligatorios) {
+        const elemento = document.querySelector(`[name="${campo.name}"]`);
+        if (!elemento || !elemento.value.trim()) {
+            mostrarToast(`El campo ${campo.label} es obligatorio`, 'is-danger');
+            return false;
+        }
+    }
+
+    // Validar RUT del apoderado (si no está marcado como extranjero sin RUT)
+    const extranjeroSinRut = document.querySelector('input[name="extranjeroSinRutApoderado"]')?.checked;
+    const rutApoderado = document.querySelector('input[name="rutApoderado"]')?.value;
     
-    // Obtener referencia al botón
-    const btnGuardar = document.getElementById("guardar");
-    
-    // Deshabilitar el botón mientras se procesa
-    deshabilitarBoton(btnGuardar, "Guardando...");
-    
-    // Crear objeto FormData con los datos del formulario
-    const formData = new FormData(document.getElementById("form-datos-personales"));
-    
+    if (!extranjeroSinRut && rutApoderado && !isRut(rutApoderado.trim())) {
+        mostrarToast('El RUT del apoderado no es válido', 'is-danger');
+        return false;
+    }
+
+    return true;
+}
+
+function cargarCursosPorAnio(idAno) {
+    // Primero obtener el nombre del año usando idAno
+    fetch(`/obtener-nombre-ano?id=${idAno}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.nombre_ano) {
+                return fetch(`/obtener-cursos?anio=${data.nombre_ano}`);
+            } else {
+                return fetch('/obtener-cursos'); // sin filtro por año si no hay nombre
+            }
+        })
+        .then(response => response.json())
+        .then(cursos => {
+            // Aquí va tu código para procesar los cursos
+            const selectCurso = document.getElementById('idCurso');
+            selectCurso.innerHTML = '<option value="">Seleccione un curso</option>';
+
+            cursos.forEach(curso => {
+                const option = document.createElement('option');
+                option.value = curso.id_curso;
+                option.textContent = curso.nombre_curso;
+                selectCurso.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error al cargar cursos:', error));
+}
+
+function copiarDatosComoApoderado() {
     try {
-        // PASO 1: Crear usuario alumno
-        console.log("Paso 1: Creando usuario alumno...");
+        console.log("Iniciando copia de datos como apoderado...");
         
-        const respUsuario = await fetch('/crear-usuario', {
-            method: 'POST',
-            body: formData
+        // Obtener valores con manejo seguro de errores
+        const getValueSafely = (selector) => {
+            const element = document.querySelector(selector);
+            if (!element) {
+                console.warn(`Elemento no encontrado: ${selector}`);
+                return '';
+            }
+            return element.value || '';
+        };
+        
+        const setValueSafely = (selector, value) => {
+            const element = document.querySelector(selector);
+            if (!element) {
+                console.warn(`Elemento destino no encontrado: ${selector}`);
+                return false;
+            }
+            element.value = value;
+            return true;
+        };
+        
+        // Obtener valores del formulario de alumno
+        const nombres = getValueSafely('input[name="nombres"]');
+        const apellidoPaterno = getValueSafely('input[name="apellidoPaterno"]');
+        const apellidoMaterno = getValueSafely('input[name="apellidoMaterno"]');
+        const rut = getValueSafely('input[name="rut"]');
+        const telefono = getValueSafely('input[name="telefono"]');
+        const email = getValueSafely('input[name="email"]');
+        
+        console.log("Datos obtenidos correctamente:", {
+            nombres, apellidoPaterno, apellidoMaterno, rut, telefono, email
         });
         
-        if (!respUsuario.ok) {
-            await diagnosticarRespuesta(respUsuario, "Error al guardar usuario");
-            throw new Error(`Error al guardar datos del usuario: ${respUsuario.status}`);
+        // Establecer valores en el formulario de apoderado
+        let exito = true;
+        exito &= setValueSafely('input[name="nombresApoderado"]', nombres);
+        exito &= setValueSafely('input[name="apellidoPaternoApoderado"]', apellidoPaterno);
+        exito &= setValueSafely('input[name="apellidoMaternoApoderado"]', apellidoMaterno);
+        exito &= setValueSafely('input[name="rutApoderado"]', rut);
+        exito &= setValueSafely('input[name="telefonoApoderado"]', telefono);
+        exito &= setValueSafely('input[name="emailApoderado"]', email);
+        
+        // Intentar obtener el género seleccionado
+        try {
+            const generoRadio = document.querySelector('input[name="genero"]:checked');
+            if (generoRadio) {
+                const generoValue = generoRadio.value;
+                const generoApoderadoRadio = document.querySelector(`input[name="generoApoderado"][value="${generoValue}"]`);
+                if (generoApoderadoRadio) {
+                    generoApoderadoRadio.checked = true;
+                }
+            }
+        } catch (error) {
+            console.warn("Error al copiar el género:", error);
         }
         
-        const respuestaUsuario = await respUsuario.json();
-        const idUsuario = respuestaUsuario.idUsuario;
-        console.log("Usuario creado con ID:", idUsuario);
-        
-        // PASO 2: Crear apoderado con idUsuarioAlumno
-        console.log("Paso 2: Creando apoderado...");
-        
-        const formDataApoderado = new FormData();
-        formDataApoderado.append('idUsuarioAlumno', idUsuario); // ¡Crucial!
-        formDataApoderado.append('nombres', document.getElementById('nombresApoderado').value);
-        formDataApoderado.append('apellidoPaterno', document.getElementById('apellidoPaternoApoderado').value);
-        formDataApoderado.append('apellidoMaterno', document.getElementById('apellidoMaternoApoderado').value);
-        formDataApoderado.append('rut', document.getElementById('rutApoderado').value);
-        
-        // Añadir todos los campos adicionales del apoderado
-        const generoApoderado = document.querySelector('input[name="generoApoderado"]:checked');
-        if (generoApoderado) formDataApoderado.append('genero', generoApoderado.value);
-        
-        formDataApoderado.append('fechaNacimiento', document.getElementById('fechaNacimientoApoderado')?.value || '');
-        formDataApoderado.append('direccion', document.getElementById('direccionApoderado')?.value || '');
-        formDataApoderado.append('villa', document.getElementById('villaApoderado')?.value || '');
-        formDataApoderado.append('numero', document.getElementById('numeroApoderado')?.value || '');
-        formDataApoderado.append('departamento', document.getElementById('departamentoApoderado')?.value || '');
-        formDataApoderado.append('idComuna', document.getElementById('idComunaApoderado')?.value || '');
-        formDataApoderado.append('telefono', document.getElementById('telefonoApoderado')?.value || '');
-        formDataApoderado.append('email', document.getElementById('emailApoderado')?.value || '');
-        formDataApoderado.append('tipoApoderado', document.getElementById('tipoApoderado')?.value || '');
-        formDataApoderado.append('empresaTrabajo', document.getElementById('empresaApoderado')?.value || '');
-        formDataApoderado.append('cargoEmpresa', document.getElementById('cargoApoderado')?.value || '');
-        formDataApoderado.append('direccionTrabajo', document.getElementById('direccionTrabajoApoderado')?.value || '');
-        formDataApoderado.append('telefonoTrabajo', document.getElementById('telefonoTrabajoApoderado')?.value || '');
-        
-        console.log("ID de alumno a vincular:", idUsuario);
-        console.log("FormData del apoderado:", [...formDataApoderado.entries()]);
-        
-        const respApoderado = await fetch('/crear-apoderado', {
-            method: 'POST',
-            body: formDataApoderado
-        });
-        
-        if (!respApoderado.ok) {
-            await diagnosticarRespuesta(respApoderado, "Error al guardar apoderado");
-            throw new Error(`Error al guardar datos del apoderado: ${respApoderado.status}`);
+        // Activar pestaña de apoderado
+        const tabApoderado = document.querySelector('[data-tab="datos-apoderado"]');
+        if (tabApoderado) {
+            tabApoderado.click();
+            console.log("Pestaña de apoderado activada mediante clic directo");
+        } else {
+            console.error("No se pudo encontrar la pestaña de apoderado");
         }
         
-        const respuestaApoderado = await respApoderado.json();
-        const idApoderado = respuestaApoderado.idApoderado;
-        console.log("Apoderado creado con ID:", idApoderado);
+        console.log("Datos copiados con " + (exito ? "éxito" : "algunos errores"));
         
-        // PASO 3: Crear el registro de alumno con los datos específicos
-        console.log("Paso 3: Creando registro de alumno...");
-
-        const formDataAlumno = new FormData();
-        formDataAlumno.append('idUsuario', idUsuario);
-        formDataAlumno.append('fechaNacimiento', formData.get('fechaNacimiento'));
-        formDataAlumno.append('idAno', document.getElementById('anioIngreso').value);
-        formDataAlumno.append('idPlan', document.getElementById('plan').value);
-        formDataAlumno.append('promedioAnterior', formData.get('promedioAnterior') || '');
-        formDataAlumno.append('idEstablecimiento', document.getElementById('idEstablecimientoAnterior').value);
-        formDataAlumno.append('idApoderado', idApoderado); // Importante: incluir el ID del apoderado
-        formDataAlumno.append('idCurso', document.getElementById('cursosSelect').value);
-
-        // Campos booleanos
-        formDataAlumno.append('origenIndigena', document.querySelector('input[name="origenIndigena"]:checked')?.value === 'Si' ? 'S' : 'N');
-        formDataAlumno.append('programaPIE', document.querySelector('input[name="programaPIE"]:checked')?.value === 'Si' ? 'S' : 'N');
-        formDataAlumno.append('realizaEducacionFisica', document.querySelector('input[name="realizaEducacionFisica"]:checked')?.value === 'Si' ? 'S' : 'N');
-        formDataAlumno.append('alergicoMedicamento', document.querySelector('input[name="alergicoMedicamento"]:checked')?.value === 'Si' ? 'S' : 'N');
-
-        // Campos de texto
-        formDataAlumno.append('especificarAlergia', formData.get('especificarAlergia') || '');
-        formDataAlumno.append('enfermedadActual', formData.get('enfermedadActual') || '');
-        formDataAlumno.append('medicamentoConsumo', formData.get('medicamentoConsumo') || '');
-        formDataAlumno.append('personaRetiro', formData.get('personaRetiro') || '');
-        formDataAlumno.append('observaciones', formData.get('observaciones') || '');
-
-        // Documentación
-        formDataAlumno.append('certificadoNacimiento', document.getElementById('certificadoNacimiento')?.checked ? 'S' : 'N');
-        formDataAlumno.append('informePersonalidad', document.getElementById('informePersonalidad')?.checked ? 'S' : 'N');
-        formDataAlumno.append('informeNotas', document.getElementById('informeNotas')?.checked ? 'S' : 'N');
-        formDataAlumno.append('certificadoEstudios', document.getElementById('certificadoEstudios')?.checked ? 'S' : 'N');
-        formDataAlumno.append('fichaFirmada', document.getElementById('fichaFirmada')?.checked ? 'S' : 'N');
-
-        console.log("FormData del alumno:", [...formDataAlumno.entries()]);
-
-        const respAlumno = await fetch('/crear-alumno', {
-            method: 'POST',
-            body: formDataAlumno
-        });
-
-        if (!respAlumno.ok) {
-            await diagnosticarRespuesta(respAlumno, "Error al guardar alumno");
-            throw new Error(`Error al guardar datos del alumno: ${respAlumno.status}`);
-        }
-
-        const respuestaAlumno = await respAlumno.json();
-        console.log("Alumno creado correctamente:", respuestaAlumno);
-
-        // Todo se guardó correctamente
-        mostrarMensaje(`Registro completado con éxito. ID de usuario: ${idUsuario}`, "success");
+        // Mostrar mensaje de confirmación
+        mostrarToast('Datos copiados del alumno al apoderado', 'is-success');
         
     } catch (error) {
-        console.error("Error en el proceso de registro:", error);
-        mostrarMensaje("Error: " + error.message, "error");
-    } finally {
-        // Quitar indicador de carga
-        habilitarBoton(btnGuardar);
+        console.error("Error al copiar datos como apoderado:", error);
+        mostrarToast('Ocurrió un error al copiar los datos. Por favor, inténtalo nuevamente.', 'is-danger');
     }
 }
