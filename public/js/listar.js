@@ -55,7 +55,7 @@ function mostrarMensaje(texto, tipo) {
 function cargarCursos(idAno) {
   if (!idAno) return;
 
-  fetch(`/api/cursos?id_ano=${idAno}`)
+  fetch(`/obtener-cursos?anio=${idAno}`)
     .then(response => {
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -63,14 +63,11 @@ function cargarCursos(idAno) {
       return response.json();
     })
     .then(cursos => {
-      const cursosSelect = document.getElementById('cursosSelect');
-      // Mantener solo la primera opción (Todos los cursos)
+      const cursosSelect = document.getElementById('searchCurso');
       cursosSelect.innerHTML = '<option value="">-- Todos los cursos --</option>';
-
-      // Añadir cada curso como opción
       cursos.forEach(curso => {
         const option = document.createElement('option');
-        option.value = curso.nombre_curso;
+        option.value = curso.id_curso;
         option.textContent = curso.nombre_curso;
         cursosSelect.appendChild(option);
       });
@@ -94,7 +91,7 @@ function cargarAnosAcademicos() {
       }
       return response.json();
     })
-    .then(data => {
+    .then(data => { console.log("data:", data);
       const yearSelect = document.getElementById('yearSelect');
       data.forEach(year => {
         const option = document.createElement('option');
@@ -104,9 +101,9 @@ function cargarAnosAcademicos() {
       });
 
       // Debugging: mostrar los años disponibles
-      console.log("Años cargados:", Array.from(yearSelect.options).map(opt => ({ 
-        value: opt.value, 
-        text: opt.textContent 
+      console.log("Años cargados:", Array.from(yearSelect.options).map(opt => ({
+        value: opt.value,
+        text: opt.textContent
       })));
 
       // Intentar seleccionar año 2025 por defecto
@@ -128,14 +125,14 @@ function seleccionarAnoPorDefecto(yearSelect) {
   const skipLoad = urlParams.get('skipload');
 
   // Buscar primero el año 2025
-  let yearOption = Array.from(yearSelect.options).find(opt => 
+  let yearOption = Array.from(yearSelect.options).find(opt =>
     opt.textContent.includes("2025") || opt.value === "29"
   );
 
   // Si no existe la opción para 2025, intentar con el año actual
   if (!yearOption) {
     const currentYear = new Date().getFullYear();
-    yearOption = Array.from(yearSelect.options).find(opt => 
+    yearOption = Array.from(yearSelect.options).find(opt =>
       opt.textContent.includes(currentYear.toString())
     );
   }
@@ -175,7 +172,7 @@ function handleFilterSubmit(e) {
   document.getElementById('loadingIndicator').style.display = 'block';
 
   // Construir la URL con los parámetros de búsqueda
-  let url = `/api/listar?id_ano=${id_ano}`;
+  let url = `/api/listar?ano=${id_ano}`;
 
   if (nombre) {
     url += `&nombre=${encodeURIComponent(nombre)}`;
@@ -275,14 +272,14 @@ function displayResults() {
 
     row.innerHTML = `
       <td>${rutFormateado}</td>
-      <td>${alumno.a_paterno} ${alumno.a_materno || ''}, ${alumno.nombres}</td>
+      <td>${alumno.apellidoPaterno} ${alumno.apellidoMaterno || ''}, ${alumno.nombres}</td>
       <td>${alumno.curso || 'No asignado'}</td>
       <td class="buttons are-small">
-        <a href="/modificar/${alumno.id_alumno}" class="button is-warning">
+          <a href="/modificar/${alumno.idUsuario}" class="button is-warning">
           <span class="icon"><i class="fas fa-edit"></i></span>
           <span>Editar</span>
         </a>
-        <a href="/detalle?id=${alumno.id_alumno}" class="button is-info">
+        <a href="/detalle?id=${alumno.idUsuario}" class="button is-info">
           <span class="icon"><i class="fas fa-eye"></i></span>
           <span>Ver</span>
         </a>
@@ -402,7 +399,7 @@ function exportToExcel() {
   const nombreInput = document.getElementById('searchNombre');
   const cursoInput = document.getElementById('searchCurso');
 
-  let url = `/exportar-excel?id_ano=${yearSelect.value}`;
+  let url = `/exportar-excel?ano=${yearSelect.value}`;
 
   if (nombreInput.value.trim()) {
     url += `&nombre=${encodeURIComponent(nombreInput.value.trim())}`;
@@ -497,22 +494,22 @@ function inicializarPagina() {
   // Verificar parámetros URL para mensajes de éxito
   const urlParams = new URLSearchParams(window.location.search);
   const showSuccess = urlParams.get('success');
-  
+
   if (showSuccess) {
     document.getElementById('successMessage').style.display = 'block';
     setTimeout(() => {
       document.getElementById('successMessage').style.display = 'none';
     }, 5000);
   }
-  
+
   // Configurar cierre de mensajes
   document.querySelector('.notification .delete').addEventListener('click', function () {
     document.getElementById('successMessage').style.display = 'none';
   });
-  
+
   // Cargar años académicos
   cargarAnosAcademicos();
-  
+
   // Event listener para cambio de año
   document.getElementById('yearSelect').addEventListener('change', function () {
     const idAno = this.value;
@@ -520,11 +517,11 @@ function inicializarPagina() {
       cargarCursos(idAno);
     }
   });
-  
+
   // Event listeners para botones de acción
   document.getElementById('exportExcel').addEventListener('click', exportToExcel);
   document.getElementById('printList').addEventListener('click', printList);
-  
+
   // Event listeners para paginación
   document.getElementById('prevPage').addEventListener('click', () => {
     if (currentPage > 1) {
@@ -532,14 +529,14 @@ function inicializarPagina() {
       displayResults();
     }
   });
-  
+
   document.getElementById('nextPage').addEventListener('click', () => {
     if (currentPage < totalPages) {
       currentPage++;
       displayResults();
     }
   });
-  
+
   // Event listener para búsqueda
   document.getElementById('filterForm').addEventListener('submit', handleFilterSubmit);
 }

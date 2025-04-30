@@ -222,10 +222,11 @@ app.get("/obtener-cursos", (req, res) => {
       
       // Usar alumno_ano en lugar de curso_ano (que no existe)
       query = `
-        SELECT DISTINCT c.id_curso, c.nombre_curso 
+        SELECT c.id_curso, c.nombre_curso
         FROM curso c
         INNER JOIN alumno_ano aa ON c.id_curso = aa.id_curso
         WHERE aa.id_ano = ?
+        GROUP BY c.id_curso, c.nombre_curso
         ORDER BY c.nombre_curso ASC
       `;
       
@@ -251,7 +252,8 @@ app.get("/obtener-cursos", (req, res) => {
 
 app.get("/obtener-anos", (req, res) => {
   const query = "SELECT id_ano, nombre_ano FROM ano_establecimiento ORDER BY nombre_ano DESC";
-  db.query(query, (err, results) => {
+  console.log(query);
+  db.query(query, (err, results) => { console.log (results);
     if (err) return handleDatabaseError(err, res, "Error al obtener años académicos");
     const formattedResults = results.map(row => {
       return {
@@ -259,7 +261,8 @@ app.get("/obtener-anos", (req, res) => {
         nombre_ano: `${row.nombre_ano}`
       };
     });
-    res.json(formattedResults);
+    //console.log(res.json(formattedResults));
+    return res.json(formattedResults);
   });
 });
 
