@@ -6,6 +6,7 @@ const multer = require("multer");
 const app = express();
 const PORT = 3000;
 
+
 // Middleware
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -17,10 +18,10 @@ const upload = multer();
 
 // Conexión a la base de datos
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "123456",
-  database: "erp_lph",
+  host: process.env.DBHOST,
+  user: process.env.DBUSER,
+  password: process.env.DBPASS,
+  database: process.env.DBNAME,
 });
 
 db.connect((err) => {
