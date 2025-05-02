@@ -95,7 +95,7 @@ function cargarAnosAcademicos() {
       const yearSelect = document.getElementById('yearSelect');
       data.forEach(year => {
         const option = document.createElement('option');
-        option.value = year.id_ano;
+        option.value = year.nombre_ano;
         option.textContent = year.nombre_ano;
         yearSelect.appendChild(option);
       });

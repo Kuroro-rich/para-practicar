@@ -194,51 +194,10 @@ app.get('/obtener-planes', (req, res) => {
 app.get("/obtener-cursos", (req, res) => {
   const anio = req.query.anio;
   let query;
-  
-  if (anio) {
-    // Buscar el id_ano correspondiente al año proporcionado
-    const queryAno = "SELECT id_ano FROM ano_establecimiento WHERE nombre_ano = ?";
-    
-    db.query(queryAno, [anio], (err, resultadosAno) => {
-      if (err) return handleDatabaseError(err, res, "Error al buscar el año académico");
-      
-      if (resultadosAno.length === 0) {
-        // Si no encuentra el año, devolver todos los cursos
-        query = `
-          SELECT id_curso, nombre_curso 
-          FROM curso
-          ORDER BY nombre_curso ASC
-        `;
-        
-        db.query(query, (err, resultadosCursos) => {
-          if (err) return handleDatabaseError(err, res, "Error al obtener todos los cursos");
-          res.json(resultadosCursos);
-        });
-        
-        return;
-      }
-      
-      const idAno = resultadosAno[0].id_ano;
-      console.log(`Obteniendo cursos para el año ID: ${idAno} (${anio})`);
-      
-      // Usar alumno_ano en lugar de curso_ano (que no existe)
+
+  // en caso de que no haya un año, se devuelven todos los cursos y se retorna para terminar la ejecución
+  if(!anio){
       query = `
-        SELECT c.id_curso, c.nombre_curso
-        FROM curso c
-        INNER JOIN alumno_ano aa ON c.id_curso = aa.id_curso
-        WHERE aa.id_ano = ?
-        GROUP BY c.id_curso, c.nombre_curso
-        ORDER BY c.nombre_curso ASC
-      `;
-      
-      db.query(query, [idAno], (err, resultadosCursos) => {
-        if (err) return handleDatabaseError(err, res, "Error al obtener los cursos");
-        res.json(resultadosCursos);
-      });
-    });
-  } else {
-    // Si no se proporciona año, devolver todos los cursos
-    query = `
       SELECT id_curso, nombre_curso 
       FROM curso
       ORDER BY nombre_curso ASC
@@ -248,7 +207,27 @@ app.get("/obtener-cursos", (req, res) => {
       if (err) return handleDatabaseError(err, res, "Error al obtener todos los cursos");
       res.json(resultadosCursos);
     });
+    return;
   }
+  
+  query = `
+    SELECT 
+          cu.nombre_curso 
+        from 
+          ano_establecimiento an
+        inner join 
+          curso cu
+          on 
+          an.id_ano = cu.id_ano
+        where an.nombre_ano = ?;
+  `
+  db.query(query, [anio], (err, resultadosAno) => {
+    if (err) return handleDatabaseError(err, res, "Error al buscar el año académico");
+    res.json(resultadosAno);
+  });
+  return;
+
+
 });
 
 app.get("/obtener-anos", (req, res) => {
