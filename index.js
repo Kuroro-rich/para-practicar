@@ -197,14 +197,28 @@ app.get("/obtener-cursos", (req, res) => {
 
   // en caso de que no haya un año, se devuelven todos los cursos y se retorna para terminar la ejecución
   if(!anio){
-      query = `
-      SELECT id_curso, nombre_curso 
-      FROM curso
+    //   query = `
+    //   SELECT id_curso, nombre_curso 
+    //   FROM curso
+    //   ORDER BY nombre_curso ASC
+    // `;
+    query = `
+      SELECT 
+        cu.id_curso,
+        cu.nombre_curso,
+        ae.nombre_ano 
+      FROM 
+        curso cu
+      INNER JOIN
+        ano_establecimiento ae
+      ON
+        cu.id_ano = ae.id_ano
       ORDER BY nombre_curso ASC
-    `;
+    `
     
     db.query(query, (err, resultadosCursos) => {
       if (err) return handleDatabaseError(err, res, "Error al obtener todos los cursos");
+      console.log("resultadosCursos", resultadosCursos);
       res.json(resultadosCursos);
     });
     return;
@@ -212,6 +226,7 @@ app.get("/obtener-cursos", (req, res) => {
   
   query = `
     SELECT 
+          cu.id_curso,
           cu.nombre_curso 
         from 
           ano_establecimiento an
@@ -223,6 +238,7 @@ app.get("/obtener-cursos", (req, res) => {
   `
   db.query(query, [anio], (err, resultadosAno) => {
     if (err) return handleDatabaseError(err, res, "Error al buscar el año académico");
+    console.log("resultadosCursos2", resultadosAno);
     res.json(resultadosAno);
   });
   return;
@@ -520,27 +536,33 @@ app.get("/obtener-familiar/:id/:parentesco", (req, res) => {
 
 app.get("/api/listar", (req, res) => {
   const { ano, nombre, curso } = req.query;
-
+  console.log("Año:", ano);
+  console.log("Nombre:", nombre);
+  console.log("Curso:", curso);
   let query = `
-    SELECT 
-      u.id_usuario AS idUsuario, 
-      u.rut, 
-      u.nombres, 
-      u.a_paterno AS apellidoPaterno, 
-      u.a_materno AS apellidoMaterno, 
-      c.nombre_curso AS curso, 
+    SELECT
+      c.id_curso,
+      c.id_ano,
+      ae.nombre_ano,
+      u.id_usuario AS idUsuario,
+      u.rut,
+      u.nombres,
+      u.a_paterno AS apellidoPaterno,
+      u.a_materno AS apellidoMaterno,
+      c.nombre_curso AS curso,
       a.id_ano AS idAno
     FROM usuario u
     LEFT JOIN alumno a ON u.id_usuario = a.id_usuario
     LEFT JOIN alumno_ano aa ON u.id_usuario = aa.id_usuario
     LEFT JOIN curso c ON aa.id_curso = c.id_curso
+    LEFT JOIN ano_establecimiento ae on c.id_ano = ae.id_ano
     WHERE 1=1
   `;
 
   const params = [];
 
   if (ano) {
-    query += " AND a.id_ano = ?";
+    query += "AND ae.nombre_ano = ?";
     params.push(ano);
   }
 
@@ -556,6 +578,7 @@ app.get("/api/listar", (req, res) => {
   }
 
   query += " ORDER BY u.a_paterno, u.a_materno, u.nombres";
+  console.log("Consulta SQL:", query);
 
   db.query(query, params, (err, results) => {
     if (err) return handleDatabaseError(err, res, "Error al obtener listado de alumnos");

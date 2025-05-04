@@ -46,7 +46,7 @@
             <label class="label">Año Académico</label>
             <div class="control has-icons-left">
               <div class="select is-fullwidth">
-                <select id="yearSelect" name="id_ano" required>
+                <select id="yearSelect" name="id_ano" >
                   <option value="">-- Seleccione un año --</option>
                 </select>
               </div>
@@ -160,6 +160,14 @@
   </section>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+  <!--
+    Script descargado porque en caso de que se caiga el cdn de forma global no
+    seguira funcionando (Revisar caso españa de laliga vs cloudflare). Aparte da mas control,
+    adicionalmente se generan menos dependencias.
+    Si esto llegase a molestar, eliminar el script de la carpeta, la linea inferior a este comentario
+     y volver a usar script del cdn descomentando la linea que esta encima de este comentario. 
+  -->
+  <!-- <script src="/libs/all.min.5.15.4.js"></script> -->
   <script src="/js/listar.js"></script>
 </body>
 

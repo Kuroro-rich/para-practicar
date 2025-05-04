@@ -53,9 +53,8 @@ function mostrarMensaje(texto, tipo) {
  * @param {string} idAno - ID del año académico
  */
 function cargarCursos(idAno) {
-  if (!idAno) return;
-
-  fetch(`/obtener-cursos?anio=${idAno}`)
+  idAno ? url = `/obtener-cursos?anio=${idAno}` : url = '/obtener-cursos';
+  fetch(url)
     .then(response => {
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -65,10 +64,18 @@ function cargarCursos(idAno) {
     .then(cursos => {
       const cursosSelect = document.getElementById('searchCurso');
       cursosSelect.innerHTML = '<option value="">-- Todos los cursos --</option>';
+      if (cursos.length === 0) {
+        mostrarMensaje('No hay cursos disponibles para el año académico seleccionado.', 'warning');
+        return;
+      }
       cursos.forEach(curso => {
+        if (curso.nombre_curso === "--------" || curso.nombre_curso === "---------") {
+          // Si el año académico es "--------", saltar a la siguiente iteración
+          return;
+        }
         const option = document.createElement('option');
         option.value = curso.id_curso;
-        option.textContent = curso.nombre_curso;
+        option.textContent = idAno ? `${curso.nombre_curso} (${idAno})` : `${curso.nombre_curso} (${curso.nombre_ano})`;
         cursosSelect.appendChild(option);
       });
     })
@@ -91,7 +98,7 @@ function cargarAnosAcademicos() {
       }
       return response.json();
     })
-    .then(data => { console.log("data:", data);
+    .then(data => { 
       const yearSelect = document.getElementById('yearSelect');
       data.forEach(year => {
         const option = document.createElement('option');
@@ -106,8 +113,6 @@ function cargarAnosAcademicos() {
         text: opt.textContent
       })));
 
-      // Intentar seleccionar año 2025 por defecto
-      seleccionarAnoPorDefecto(yearSelect);
     })
     .catch(error => {
       console.error('Error al cargar los años:', error);
@@ -115,37 +120,7 @@ function cargarAnosAcademicos() {
     });
 }
 
-/**
- * Selecciona un año académico por defecto (2025, o el actual)
- * @param {HTMLSelectElement} yearSelect - Elemento select de años
- */
-function seleccionarAnoPorDefecto(yearSelect) {
-  // Verificar parámetros URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const skipLoad = urlParams.get('skipload');
 
-  // Buscar primero el año 2025
-  let yearOption = Array.from(yearSelect.options).find(opt =>
-    opt.textContent.includes("2025") || opt.value === "29"
-  );
-
-  // Si no existe la opción para 2025, intentar con el año actual
-  if (!yearOption) {
-    const currentYear = new Date().getFullYear();
-    yearOption = Array.from(yearSelect.options).find(opt =>
-      opt.textContent.includes(currentYear.toString())
-    );
-  }
-
-  // Solo cargar datos automáticamente si no viene de un registro exitoso
-  if (!skipLoad && yearOption) {
-    yearOption.selected = true;
-    // Cargar los cursos para el año seleccionado
-    cargarCursos(yearOption.value);
-    // Realizar búsqueda automáticamente
-    document.getElementById('filterForm').dispatchEvent(new Event('submit'));
-  }
-}
 
 // ====================================================
 // FUNCIONES DE FILTRADO Y BÚSQUEDA
@@ -158,12 +133,19 @@ function seleccionarAnoPorDefecto(yearSelect) {
 function handleFilterSubmit(e) {
   e.preventDefault();
 
-  const id_ano = document.getElementById('yearSelect').value;
+  const anio = document.getElementById('yearSelect').value;
   const nombre = document.getElementById('searchNombre').value.trim();
   const curso = document.getElementById('searchCurso').value.trim();
+  const cursoNombre = document.getElementById('searchCurso').options[document.getElementById('searchCurso').selectedIndex].textContent;
+  console.log(`
+      id_ano: ${anio}
+      nombre: ${nombre}
+      cursoId: ${curso}
+      cursoNombre: ${cursoNombre}
+    `)
 
   // Validaciones
-  if (!id_ano) {
+  if (!anio) {
     mostrarMensaje('Debe seleccionar un año académico antes de buscar.', 'warning');
     return;
   }
@@ -172,7 +154,7 @@ function handleFilterSubmit(e) {
   document.getElementById('loadingIndicator').style.display = 'block';
 
   // Construir la URL con los parámetros de búsqueda
-  let url = `/api/listar?ano=${id_ano}`;
+  let url = `/api/listar?ano=${anio}`;
 
   if (nombre) {
     url += `&nombre=${encodeURIComponent(nombre)}`;
@@ -182,10 +164,9 @@ function handleFilterSubmit(e) {
     url += `&curso=${encodeURIComponent(curso)}`;
   }
 
-  const yearSelectElement = document.getElementById('yearSelect');
-  const yearText = yearSelectElement.options[yearSelectElement.selectedIndex].textContent;
-  console.log("Buscando alumnos con año:", id_ano, `(${yearText})`, "- Nombre:", nombre, "- Curso:", curso);
-
+  //const yearText = yearSelectElement.options[yearSelectElement.selectedIndex].textContent;
+  console.log("Buscando alumnos con año:", anio, "- Nombre:", nombre, "- Curso:", curso);
+  console.log("URL de búsqueda:", url);
   fetch(url)
     .then(response => {
       if (!response.ok) {
@@ -194,6 +175,7 @@ function handleFilterSubmit(e) {
       return response.json();
     })
     .then(data => {
+      console.log("Resultados de búsqueda:", data);
       // Ocultar indicador de carga
       document.getElementById('loadingIndicator').style.display = 'none';
 
@@ -510,6 +492,9 @@ function inicializarPagina() {
   // Cargar años académicos
   cargarAnosAcademicos();
 
+  // Cargar todos los cursos sin filtrar
+  cargarCursos()
+
   // Event listener para cambio de año
   document.getElementById('yearSelect').addEventListener('change', function () {
     const idAno = this.value;
@@ -540,6 +525,7 @@ function inicializarPagina() {
   // Event listener para búsqueda
   document.getElementById('filterForm').addEventListener('submit', handleFilterSubmit);
 }
+
 
 // Inicializar cuando el DOM esté completamente cargado
 document.addEventListener('DOMContentLoaded', inicializarPagina);
