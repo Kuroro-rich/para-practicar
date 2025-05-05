@@ -54,6 +54,7 @@ function mostrarMensaje(texto, tipo) {
  */
 function cargarCursos(idAno) {
   idAno ? url = `/obtener-cursos?anio=${idAno}` : url = '/obtener-cursos';
+  
   fetch(url)
     .then(response => {
       if (!response.ok) {
@@ -75,7 +76,7 @@ function cargarCursos(idAno) {
         }
         const option = document.createElement('option');
         option.value = curso.id_curso;
-        option.textContent = idAno ? `${curso.nombre_curso} (${idAno})` : `${curso.nombre_curso} (${curso.nombre_ano})`;
+        option.textContent = idAno ? `${curso.nombre_curso}` : `${curso.nombre_curso} (${curso.nombre_ano})`;
         cursosSelect.appendChild(option);
       });
     })

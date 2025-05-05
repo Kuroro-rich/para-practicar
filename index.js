@@ -1,3 +1,6 @@
+require('dotenv').config();
+
+
 const express = require("express");
 const mysql = require("mysql2");
 const bodyParser = require("body-parser");
@@ -195,6 +198,11 @@ app.get("/obtener-cursos", (req, res) => {
   const anio = req.query.anio;
   let query;
 
+  if(!anio){
+    return res.status(200).json([]);
+  }
+
+  /*
   // en caso de que no haya un año, se devuelven todos los cursos y se retorna para terminar la ejecución
   if(!anio){
     //   query = `
@@ -223,6 +231,7 @@ app.get("/obtener-cursos", (req, res) => {
     });
     return;
   }
+  */
   
   query = `
     SELECT 
@@ -329,7 +338,7 @@ app.get("/obtener-alumno/:id", (req, res) => {
       u.telefono AS telefono, 
       u.e_mail AS email,
       u.id_comuna AS idComuna, 
-      a.fecha_nacimiento AS fechaNacimiento, 
+      u.fecha_nacimiento AS fechaNacimiento, 
       a.id_ano AS idAno, 
       a.id_plan AS idPlan, 
       a.promedio_anterior AS promedioAnterior, 
@@ -337,7 +346,6 @@ app.get("/obtener-alumno/:id", (req, res) => {
       a.realizo_pie AS programaPIE, 
       a.educ_fisica AS realizaEducacionFisica, 
       a.alergico AS alergicoMedicamento, 
-      a.especificar_alergia AS especificarAlergia,
       a.enfermedad_actual AS enfermedadActual, 
       a.medicamentos_consumo AS medicamentoConsumo, 
       a.certificado_nacimiento AS certificadoNacimiento, 
@@ -347,7 +355,6 @@ app.get("/obtener-alumno/:id", (req, res) => {
       a.ficha_firmada AS fichaFirmada, 
       a.id_estabAnterior AS idEstablecimiento,
       a.id_apoderado AS idApoderado, 
-      a.persona_retiro AS personaRetiro, 
       a.obs AS observaciones, 
       aa.id_curso AS idCurso
     FROM usuario u
@@ -379,8 +386,8 @@ app.get("/api/alumno/:id", (req, res) => {
       u.direccion_depto AS departamento, 
       u.telefono AS telefono, 
       u.e_mail AS email,
-      u.id_comuna AS idComuna, 
-      a.fecha_nacimiento AS fechaNacimiento, 
+      u.id_comuna AS idComuna,
+      u.fecha_nacimiento AS fechaNacimiento, 
       a.id_ano AS idAno, 
       a.id_plan AS idPlan, 
       a.promedio_anterior AS promedioAnterior, 
@@ -388,7 +395,6 @@ app.get("/api/alumno/:id", (req, res) => {
       a.realizo_pie AS programaPIE, 
       a.educ_fisica AS realizaEducacionFisica, 
       a.alergico AS alergicoMedicamento, 
-      a.especificar_alergia AS especificarAlergia,
       a.enfermedad_actual AS enfermedadActual, 
       a.medicamentos_consumo AS medicamentoConsumo, 
       a.certificado_nacimiento AS certificadoNacimiento, 
@@ -398,7 +404,6 @@ app.get("/api/alumno/:id", (req, res) => {
       a.ficha_firmada AS fichaFirmada, 
       a.id_estabAnterior AS idEstablecimiento,
       a.id_apoderado AS idApoderado, 
-      a.persona_retiro AS personaRetiro, 
       a.obs AS observaciones, 
       aa.id_curso AS idCurso
     FROM usuario u
@@ -599,7 +604,6 @@ app.post("/crear-alumno", upload.none(), (req, res) => {
     programaPIE,
     realizaEducacionFisica,
     alergicoMedicamento,
-    especificarAlergia,
     enfermedadActual,
     medicamentoConsumo,
     certificadoNacimiento,
@@ -607,7 +611,6 @@ app.post("/crear-alumno", upload.none(), (req, res) => {
     informeNotas,
     certificadoEstudios,
     fichaFirmada,
-    personaRetiro,
     observaciones,
     idCurso
   } = req.body;
@@ -622,11 +625,11 @@ app.post("/crear-alumno", upload.none(), (req, res) => {
     INSERT INTO alumno (
       id_usuario, fecha_nacimiento, id_ano, id_plan, promedio_anterior, 
       id_estabAnterior, id_apoderado, origen_indigena, realizo_pie, 
-      educ_fisica, alergico, especificar_alergia, enfermedad_actual, 
+      educ_fisica, alergico, enfermedad_actual, 
       medicamentos_consumo, certificado_nacimiento, inform_personalidad, 
       inform_parcial_nota, certificada_anual_estudio, ficha_firmada, 
-      persona_retiro, obs
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       obs
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const valoresAlumno = [
@@ -641,7 +644,6 @@ app.post("/crear-alumno", upload.none(), (req, res) => {
     toBooleanDB(programaPIE),
     toBooleanDB(realizaEducacionFisica),
     toBooleanDB(alergicoMedicamento),
-    especificarAlergia || null,
     enfermedadActual || null,
     medicamentoConsumo || null,
     toBooleanDB(certificadoNacimiento),
@@ -649,7 +651,6 @@ app.post("/crear-alumno", upload.none(), (req, res) => {
     toBooleanDB(informeNotas),
     toBooleanDB(certificadoEstudios),
     toBooleanDB(fichaFirmada),
-    personaRetiro || null,
     observaciones || null
   ];
 
@@ -689,7 +690,6 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
     programaPIE,
     realizaEducacionFisica,
     alergicoMedicamento,
-    especificarAlergia,
     enfermedadActual,
     medicamentoConsumo,
     certificadoNacimiento,
@@ -697,7 +697,6 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
     informeNotas,
     certificadoEstudios,
     fichaFirmada,
-    personaRetiro,
     observaciones,
     idCurso
   } = req.body;
@@ -709,10 +708,22 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
 
   // Usar transacciones para actualizar tanto alumno como alumno_ano
   const queries = [
+    // Actualiza la tabla usuario (fecha de nacimiento)
+    {
+      sql: `
+        UPDATE usuario SET
+          fecha_nacimiento = ?
+        WHERE id_usuario = ?
+      `,
+      params: [
+        fechaNacimiento || null,
+        idUsuario
+      ]
+    },
+    // Actualiza la tabla alumno
     {
       sql: `
         UPDATE alumno SET
-          fecha_nacimiento = ?,
           id_ano = ?,
           id_plan = ?,
           promedio_anterior = ?,
@@ -722,7 +733,6 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
           realizo_pie = ?,
           educ_fisica = ?,
           alergico = ?,
-          especificar_alergia = ?,
           enfermedad_actual = ?,
           medicamentos_consumo = ?,
           certificado_nacimiento = ?,
@@ -730,12 +740,10 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
           inform_parcial_nota = ?,
           certificada_anual_estudio = ?,
           ficha_firmada = ?,
-          persona_retiro = ?,
           obs = ?
         WHERE id_usuario = ?
       `,
       params: [
-        fechaNacimiento || null,
         idAno,
         idPlan || null,
         promedioAnterior || null,
@@ -745,7 +753,6 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
         toBooleanDB(programaPIE),
         toBooleanDB(realizaEducacionFisica),
         toBooleanDB(alergicoMedicamento),
-        especificarAlergia || null,
         enfermedadActual || null,
         medicamentoConsumo || null,
         toBooleanDB(certificadoNacimiento),
@@ -753,7 +760,6 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
         toBooleanDB(informeNotas),
         toBooleanDB(certificadoEstudios),
         toBooleanDB(fichaFirmada),
-        personaRetiro || null,
         observaciones || null,
         idUsuario
       ]
@@ -775,7 +781,7 @@ app.post("/actualizar-alumno/:id", upload.none(), (req, res) => {
 
     if (results.length === 0) {
       // Si no existe, reemplazar la segunda consulta por un INSERT
-      queries[1] = {
+      queries[2] = {
         sql: `
           INSERT INTO alumno_ano (id_usuario, id_curso, id_ano) 
           VALUES (?, ?, ?)
@@ -1294,18 +1300,16 @@ app.get('/exportar-excel', (req, res) => {
       c.comuna AS 'Comuna',
       u.telefono AS 'Teléfono',
       u.e_mail AS 'Email',
-      a.fecha_nacimiento AS 'Fecha Nacimiento',
+      u.fecha_nacimiento AS 'Fecha Nacimiento',
       IFNULL(p.nacionalidad, 'Chilena') AS 'Nacionalidad',
       a.origen_indigena AS 'Origen Indígena',
       a.realizo_pie AS 'Programa PIE',
       a.educ_fisica AS 'Ed. Física',
       a.alergico AS 'Alérgico',
-      a.especificar_alergia AS 'Especificar Alergia',
       a.enfermedad_actual AS 'Enfermedad',
       a.medicamentos_consumo AS 'Medicamentos',
       a.promedio_anterior AS 'Promedio Anterior',
       e.nombre AS 'Establecimiento Anterior',
-      a.persona_retiro AS 'Persona Retiro',
       cu.nombre_curso AS 'Curso',
       ae.nombre_ano AS 'Año'
     FROM usuario u

@@ -61,6 +61,7 @@
                 <form id="form-datos-personales">
                     <input type="hidden" name="idUsuario">
                     <input type="hidden" name="idAlumno">
+                    <input type="hidden" name="idCurso" id="idCurso">
 
                     <div class="columns is-multiline">
                         <div class="column is-half">
@@ -194,9 +195,7 @@
                                 <label class="label required">Comuna</label>
                                 <div class="control">
                                     <div class="select is-fullwidth">
-                                        <select name="idComuna">
-                                            <option value="">** Cargando comunas... **</option>
-                                        </select>
+                                        <select name="idComuna" id="idComuna">...</select>
                                     </div>
                                 </div>
                             </div>
@@ -223,9 +222,7 @@
                         <label class="label">Año de Ingreso</label>
                         <div class="control">
                             <div class="select is-fullwidth">
-                                <select name="anioIngreso" id="anioIngreso">
-                                    <!-- Las opciones se cargarán dinámicamente -->
-                                </select>
+                                <select name="idAno" id="idAno">...</select>
                             </div>
                         </div>
                     </div>
@@ -235,9 +232,7 @@
                         <label class="label required">Establecimiento Anterior</label>
                         <div class="control">
                             <div class="select is-fullwidth">
-                                <select name="idEstablecimientoAnterior" id="idEstablecimientoAnterior">
-                                    <option value="">** Cargando establecimientos... **</option>
-                                </select>
+                                <select name="idEstablecimiento" id="idEstablecimiento">...</select>
                             </div>
                         </div>
                         <label class="checkbox ml-2">
@@ -271,9 +266,7 @@
                         <label class="label">Plan al que postula</label>
                         <div class="control">
                             <div class="select is-fullwidth">
-                                <select name="plan" id="plan">
-                                    <option value="">** Cargando planes... **</option>
-                                </select>
+                                <select name="idPlan" id="idPlan">...</select>
                             </div>
                         </div>
                     </div>

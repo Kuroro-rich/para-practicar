@@ -46,7 +46,7 @@
             <label class="label">Año Académico</label>
             <div class="control has-icons-left">
               <div class="select is-fullwidth">
-                <select id="yearSelect" name="id_ano" >
+                <select id="yearSelect" name="id_ano" onchange="cargarCursos(this.value);" >
                   <option value="">-- Seleccione un año --</option>
                 </select>
               </div>
