@@ -1,22 +1,13 @@
-/**
- * SISTEMA DE GESTIÓN DE ALUMNOS
- * Módulo de listado de alumnos
- * 
- * Este archivo contiene todas las funciones necesarias para:
- * - Cargar y filtrar alumnos por año académico, nombre y curso
- * - Mostrar resultados paginados
- * - Exportar a Excel e imprimir listados
- */
 
 // ====================================================
 // VARIABLES GLOBALES
 // ====================================================
 
 /** Variables para paginación */
-let currentPage = 1;           // Página actual
-let totalPages = 1;            // Total de páginas 
-let itemsPerPage = 20;         // Ítems por página
-let currentResults = [];       // Resultados actuales (todos)
+let currentPage = 1;           
+let totalPages = 1;             
+let itemsPerPage = 20;         
+let currentResults = [];      
 
 // ====================================================
 // FUNCIONES DE UTILIDAD
@@ -24,8 +15,8 @@ let currentResults = [];       // Resultados actuales (todos)
 
 /**
  * Muestra un mensaje al usuario con un tipo específico
- * @param {string} texto - Texto del mensaje
- * @param {string} tipo - Tipo de mensaje (success, warning, danger, info)
+ * @param {string} texto 
+ * @param {string} tipo 
  */
 function mostrarMensaje(texto, tipo) {
   const mensaje = document.getElementById('successMessage');
@@ -50,7 +41,7 @@ function mostrarMensaje(texto, tipo) {
 
 /**
  * Carga los cursos disponibles para un año académico específico
- * @param {string} idAno - ID del año académico
+ * @param {string} idAno 
  */
 function cargarCursos(idAno) {
   idAno ? url = `/obtener-cursos?anio=${idAno}` : url = '/obtener-cursos';
@@ -71,7 +62,7 @@ function cargarCursos(idAno) {
       }
       cursos.forEach(curso => {
         if (curso.nombre_curso === "--------" || curso.nombre_curso === "---------") {
-          // Si el año académico es "--------", saltar a la siguiente iteración
+          
           return;
         }
         const option = document.createElement('option');
@@ -129,7 +120,7 @@ function cargarAnosAcademicos() {
 
 /**
  * Maneja el envío del formulario de filtro
- * @param {Event} e - Evento del formulario
+ * @param {Event} e 
  */
 function handleFilterSubmit(e) {
   e.preventDefault();
@@ -219,7 +210,7 @@ function handleFilterSubmit(e) {
  */
 function displayResults() {
   const usuariosTable = document.getElementById('usuariosTable');
-  usuariosTable.innerHTML = ''; // Limpiar tabla
+  usuariosTable.innerHTML = ''; 
 
   // Ocultar indicador de carga si aún estaba visible
   document.getElementById('loadingIndicator').style.display = 'none';
@@ -296,9 +287,9 @@ function updatePaginationControls() {
 
 /**
  * Genera enlaces de paginación
- * @param {number} startPage - Página inicial a mostrar
- * @param {number} endPage - Página final a mostrar
- * @param {HTMLElement} paginationNumbers - Contenedor de paginación
+ * @param {number} startPage 
+ * @param {number} endPage 
+ * @param {HTMLElement} paginationNumbers 
  */
 function addPaginationLinks(startPage, endPage, paginationNumbers) {
   // Siempre mostrar la primera página
@@ -325,8 +316,8 @@ function addPaginationLinks(startPage, endPage, paginationNumbers) {
 
 /**
  * Añade un número de página a la paginación
- * @param {number} pageNum - Número de página
- * @param {HTMLElement} container - Contenedor donde añadirlo
+ * @param {number} pageNum 
+ * @param {HTMLElement} container 
  */
 function addPageNumber(pageNum, container) {
   const li = document.createElement('li');
@@ -349,7 +340,7 @@ function addPageNumber(pageNum, container) {
 
 /**
  * Añade puntos suspensivos a la paginación
- * @param {HTMLElement} container - Contenedor donde añadirlo
+ * @param {HTMLElement} container 
  */
 function addEllipsis(container) {
   const li = document.createElement('li');
