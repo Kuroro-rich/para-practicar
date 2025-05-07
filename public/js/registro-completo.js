@@ -152,6 +152,27 @@ document.addEventListener('DOMContentLoaded', function() {
     validarSoloNumeros();
     validarSoloTexto();
     validarCamposNumericos();
+
+    // Evento para generar campos de año de nacimiento de hermanos
+    const hermanosInput = document.querySelector('input[name="hermanos"]');
+    const contenedorAnios = document.getElementById('contenedor-hermanos'); // <-- usa el id del HTML
+    if (hermanosInput && contenedorAnios) {
+        hermanosInput.addEventListener('input', function() {
+            contenedorAnios.innerHTML = '';
+            const cantidad = parseInt(this.value) || 0;
+            for (let i = 1; i <= cantidad; i++) {
+                const div = document.createElement('div');
+                div.className = 'field';
+                div.innerHTML = `
+                    <label class="label">Año de nacimiento del hermano ${i}</label>
+                    <div class="control">
+                        <input class="input" type="number" name="anioNacimientoHermano${i}" min="1950" max="2025" placeholder="Ej: 2010">
+                    </div>
+                `;
+                contenedorAnios.appendChild(div);
+            }
+        });
+    }
 });
 
 // Función para configurar la navegación por pestañas
@@ -636,117 +657,53 @@ function manejarCheckboxSinInformacion() {
 function copiarDatosFamiliarComoApoderado(e) {
     e.preventDefault();
 
-    console.log("Iniciando copia de datos de familiar a apoderado...");
+    // Obtener los valores de los campos del familiar 1
+    const nombres = document.getElementById('nombresFamiliar')?.value || '';
+    const apellidoPaterno = document.getElementById('apellidoPaternoFamiliar')?.value || '';
+    const apellidoMaterno = document.getElementById('apellidoMaternoFamiliar')?.value || '';
+    const rut = document.getElementById('rutFamiliar')?.value || '';
+    const fechaNacimiento = document.getElementById('fechaNacimientoFamiliar')?.value || '';
+    const genero = document.getElementById('generoFamiliar')?.value || '';
+    const empresa = document.getElementById('nombreEmpresa')?.value || '';
+    const cargo = document.getElementById('cargoEmpresa')?.value || '';
+    const direccionTrabajo = document.getElementById('direccionTrabajo')?.value || '';
+    const telefonoTrabajo = document.getElementById('telefonoTrabajo')?.value || '';
+    const telefono = document.getElementById('telefonoFamiliar2')?.value || '';
+    const extranjeroSinRut = document.getElementById('extranjeroSinRut')?.checked || false;
 
-    // Obtener los valores de los campos del familiar
-    // Usar selectores más flexibles que coincidan con la estructura de la página
-    const parentescoSelect = document.querySelector('select[name^="parentesco"]');
-    const nombresFamiliarInput = document.querySelector('input[name^="nombresFamiliar"]');
-    const apellidoPaternoFamiliarInput = document.querySelector('input[name^="apellidoPaternoFamiliar"]');
-    const apellidoMaternoFamiliarInput = document.querySelector('input[name^="apellidoMaternoFamiliar"]');
-    const rutFamiliarInput = document.querySelector('input[name^="rutFamiliar"]');
-    const extranjeroCheckbox = document.querySelector('input[type="checkbox"][name^="extranjeroSinRut"]');
-    const fechaNacimientoInput = document.querySelector('input[type="date"][name^="fechaNacimientoFamiliar"]');
-    const generoSelect = document.querySelector('select:has(option[value="Masculino"])');
+    // Asignar valores a los campos del apoderado
+    asignarValorSeguro('input[name="nombresApoderado"]', nombres);
+    asignarValorSeguro('input[name="apellidoPaternoApoderado"]', apellidoPaterno);
+    asignarValorSeguro('input[name="apellidoMaternoApoderado"]', apellidoMaterno);
+    asignarValorSeguro('input[name="rutApoderado"]', rut);
+    asignarValorSeguro('input[name="fechaNacimientoApoderado"]', fechaNacimiento);
+    asignarValorSeguro('input[name="empresaApoderado"]', empresa);
+    asignarValorSeguro('input[name="cargoApoderado"]', cargo);
+    asignarValorSeguro('input[name="direccionTrabajoApoderado"]', direccionTrabajo);
+    asignarValorSeguro('input[name="telefonoTrabajoApoderado"]', telefonoTrabajo);
+    asignarValorSeguro('input[name="telefonoApoderado"]', telefono);
 
-    // Verificar si encontramos los elementos necesarios
-    if (!nombresFamiliarInput || !apellidoPaternoFamiliarInput || !apellidoMaternoFamiliarInput) {
-        console.error("No se encontraron los campos del familiar necesarios", {
-            nombres: nombresFamiliarInput,
-            apellidoPaterno: apellidoPaternoFamiliarInput,
-            apellidoMaterno: apellidoMaternoFamiliarInput
-        });
-        mostrarMensaje("Error al encontrar los campos del familiar. Por favor contacte al administrador.", "error");
-        return;
+    // Copiar género (de select a radio)
+    if (genero) {
+        const radioGenero = document.querySelector(`input[name="generoApoderado"][value="${genero}"]`);
+        if (radioGenero) {
+            radioGenero.checked = true;
+        }
     }
 
-    // Verificar que los campos obligatorios tengan datos
-    if (!nombresFamiliarInput.value || !apellidoPaternoFamiliarInput.value) {
-        mostrarMensaje("Por favor complete al menos nombres y apellido paterno del familiar antes de copiar", "error");
-        return;
+    // Copiar checkbox de extranjero sin RUT
+    const extranjeroApoderado = document.querySelector('input[name="extranjeroSinRutApoderado"]');
+    if (extranjeroApoderado) {
+        extranjeroApoderado.checked = extranjeroSinRut;
     }
 
-    console.log("Datos encontrados del familiar:", {
-        parentesco: parentescoSelect?.value,
-        nombres: nombresFamiliarInput.value,
-        apellidoPaterno: apellidoPaternoFamiliarInput.value,
-        apellidoMaterno: apellidoMaternoFamiliarInput.value
-    });
-
-    try {
-        // Copiar datos al apoderado
-        if (parentescoSelect) {
-            const tipoApoderadoSelect = document.querySelector('select[name="tipoApoderado"]');
-            if (tipoApoderadoSelect) {
-                tipoApoderadoSelect.value = parentescoSelect.value;
-            }
-        }
-
-        // Asignar valores a los campos de apoderado
-        asignarValorSeguro('input[name="nombresApoderado"]', nombresFamiliarInput.value);
-        asignarValorSeguro('input[name="apellidoPaternoApoderado"]', apellidoPaternoFamiliarInput.value);
-        asignarValorSeguro('input[name="apellidoMaternoApoderado"]', apellidoMaternoFamiliarInput.value);
-
-        if (rutFamiliarInput) {
-            asignarValorSeguro('input[name="rutApoderado"]', rutFamiliarInput.value);
-        }
-
-        // Manejar checkbox de extranjero sin RUT
-        if (extranjeroCheckbox) {
-            const extranjeroApoderado = document.querySelector('input[name="extranjeroSinRutApoderado"]');
-            if (extranjeroApoderado) {
-                extranjeroApoderado.checked = extranjeroCheckbox.checked;
-            }
-        }
-
-        // Copiar género
-        if (generoSelect && generoSelect.value) {
-            const generoValue = generoSelect.value;
-            const radioGenero = document.querySelector(`input[name="generoApoderado"][value="${generoValue}"]`);
-            if (radioGenero) {
-                radioGenero.checked = true;
-            }
-        }
-
-        // Copiar fecha de nacimiento
-        if (fechaNacimientoInput && fechaNacimientoInput.value) {
-            asignarValorSeguro('input[name="fechaNacimientoApoderado"]', fechaNacimientoInput.value);
-            actualizarEdadApoderado(fechaNacimientoInput.value);
-        }
-
-        // Copiar datos de trabajo
-        asignarValorSeguro('input[name="empresaApoderado"]', document.querySelector('input[name="nombreEmpresa"]')?.value || '');
-        asignarValorSeguro('input[name="cargoApoderado"]', document.querySelector('input[name="cargoEmpresa"]')?.value || '');
-        asignarValorSeguro('input[name="direccionTrabajoApoderado"]', document.querySelector('input[name="direccionTrabajo"]')?.value || '');
-        asignarValorSeguro('input[name="telefonoTrabajoApoderado"]', document.querySelector('input[name="telefonoTrabajo"]')?.value || '');
-
-        // Copiar teléfono
-        asignarValorSeguro('input[name="telefonoApoderado"]', document.querySelector('input[name^="telefonoFamiliar"]')?.value || '');
-
-        console.log("Datos copiados exitosamente");
-
-        // Cambiar a pestaña de apoderado - usando múltiples estrategias
-        const tabApoderado = document.querySelector('[data-tab="datos-apoderado"]');
-        if (tabApoderado) {
-            console.log("Cambiando a pestaña de apoderado mediante data-tab");
-            tabApoderado.click();
-        } else {
-            // Intentar encontrar el tab por texto
-            const tabs = document.querySelectorAll('.tabs ul li');
-            for (const tab of tabs) {
-                if (tab.textContent.includes('Apoderado')) {
-                    console.log("Cambiando a pestaña de apoderado mediante texto");
-                    tab.click();
-                    break;
-                }
-            }
-        }
-
-        mostrarMensaje("Datos copiados al apoderado correctamente", "success");
-    } catch (error) {
-        console.error("Error al copiar datos:", error);
-        mostrarMensaje("Error al copiar los datos: " + error.message, "error");
+    // Cambiar a pestaña de apoderado
+    const tabApoderado = document.querySelector('[data-tab="datos-apoderado"]');
+    if (tabApoderado) {
+        tabApoderado.click();
     }
+
+    mostrarMensaje("Datos copiados al apoderado correctamente", "success");
 }
 
 // Función auxiliar para asignar valores de manera segura
@@ -757,6 +714,85 @@ function asignarValorSeguro(selector, valor) {
         // Disparar evento de cambio para activar cualquier listener
         const event = new Event('change', { bubbles: true });
         elemento.dispatchEvent(event);
+    }
+}
+
+function copiarDatosComoApoderado() {
+    try {
+        console.log("Iniciando copia de datos como apoderado...");
+        
+        // Obtener valores con manejo seguro de errores
+        const getValueSafely = (selector) => {
+            const element = document.querySelector(selector);
+            if (!element) {
+                console.warn(`Elemento no encontrado: ${selector}`);
+                return '';
+            }
+            return element.value || '';
+        };
+        
+        const setValueSafely = (selector, value) => {
+            const element = document.querySelector(selector);
+            if (!element) {
+                console.warn(`Elemento destino no encontrado: ${selector}`);
+                return false;
+            }
+            element.value = value;
+            return true;
+        };
+        
+        // Obtener valores del formulario de alumno
+        const nombres = getValueSafely('input[name="nombres"]');
+        const apellidoPaterno = getValueSafely('input[name="apellidoPaterno"]');
+        const apellidoMaterno = getValueSafely('input[name="apellidoMaterno"]');
+        const rut = getValueSafely('input[name="rut"]');
+        const telefono = getValueSafely('input[name="telefono"]');
+        const email = getValueSafely('input[name="email"]');
+        
+        console.log("Datos obtenidos correctamente:", {
+            nombres, apellidoPaterno, apellidoMaterno, rut, telefono, email
+        });
+        
+        // Establecer valores en el formulario de apoderado
+        let exito = true;
+        exito &= setValueSafely('input[name="nombresApoderado"]', nombres);
+        exito &= setValueSafely('input[name="apellidoPaternoApoderado"]', apellidoPaterno);
+        exito &= setValueSafely('input[name="apellidoMaternoApoderado"]', apellidoMaterno);
+        exito &= setValueSafely('input[name="rutApoderado"]', rut);
+        exito &= setValueSafely('input[name="telefonoApoderado"]', telefono);
+        exito &= setValueSafely('input[name="emailApoderado"]', email);
+        
+        // Intentar obtener el género seleccionado
+        try {
+            const generoRadio = document.querySelector('input[name="genero"]:checked');
+            if (generoRadio) {
+                const generoValue = generoRadio.value;
+                const generoApoderadoRadio = document.querySelector(`input[name="generoApoderado"][value="${generoValue}"]`);
+                if (generoApoderadoRadio) {
+                    generoApoderadoRadio.checked = true;
+                }
+            }
+        } catch (error) {
+            console.warn("Error al copiar el género:", error);
+        }
+        
+        // Activar pestaña de apoderado
+        const tabApoderado = document.querySelector('[data-tab="datos-apoderado"]');
+        if (tabApoderado) {
+            tabApoderado.click();
+            console.log("Pestaña de apoderado activada mediante clic directo");
+        } else {
+            console.error("No se pudo encontrar la pestaña de apoderado");
+        }
+        
+        console.log("Datos copiados con " + (exito ? "éxito" : "algunos errores"));
+        
+        // Mostrar mensaje de confirmación
+        mostrarToast('Datos copiados del alumno al apoderado', 'is-success');
+        
+    } catch (error) {
+        console.error("Error al copiar datos como apoderado:", error);
+        mostrarToast('Ocurrió un error al copiar los datos. Por favor, inténtalo nuevamente.', 'is-danger');
     }
 }
 
@@ -786,96 +822,7 @@ function agregarFamiliarAdicional(e) {
     const contadorFamiliares = document.querySelectorAll('.datos-familiar').length + 2;
 
     // HTML para un nuevo familiar - el código HTML queda igual
-    const nuevoFamiliarHTML = `
-        <div class="datos-familiar" id="familiar-${contadorFamiliares}">
-            <div class="header-section mt-5">DATOS FAMILIAR ${contadorFamiliares}</div>
-            <div class="columns">
-                <div class="column is-half">
-                    <div class="field">
-                        <label class="label required">Parentesco</label>
-                        <div class="control">
-                            <div class="select is-fullwidth">
-                                <select name="parentesco_${contadorFamiliares}">
-                                    <option value="">** Seleccione **</option>
-                                    <option value="Padre">Padre</option>
-                                    <option value="Madre">Madre</option>
-                                    <option value="Hermano/a">Hermano/a</option>
-                                    <option value="Abuelo/a">Abuelo/a</option>
-                                    <option value="Tío/a">Tío/a</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-half">
-                    <div class="field">
-                        <div class="control">
-                            <button type="button" class="button is-danger is-light" onclick="eliminarFamiliar(${contadorFamiliares})">
-                                Eliminar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="columns is-multiline">
-                <!-- Campos del familiar -->
-                <div class="column is-half">
-                    <div class="field">
-                        <label class="label required">RUT</label>
-                        <div class="control">
-                            <input class="input" type="text" name="rutFamiliar_${contadorFamiliares}" placeholder="Ej: 12.345.678-9">
-                            <label class="checkbox ml-2">
-                                <input type="checkbox" name="extranjeroSinRut_${contadorFamiliares}" onchange="marcarSinRut(this, ${contadorFamiliares})">
-                                Extranjero sin Rut
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-half">
-                    <div class="field">
-                        <label class="label">Apoderado Suplente</label>
-                        <div class="control">
-                            <input type="checkbox" name="apoderadoSuplente_${contadorFamiliares}">
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-half">
-                    <div class="field">
-                        <label class="label required">Nombres</label>
-                        <div class="control">
-                            <input class="input" type="text" name="nombresFamiliar_${contadorFamiliares}">
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-half">
-                    <div class="field">
-                        <label class="label required">Apellido Paterno</label>
-                        <div class="control">
-                            <input class="input" type="text" name="apellidoPaternoFamiliar_${contadorFamiliares}">
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-half">
-                    <div class="field">
-                        <label class="label">Apellido Materno</label>
-                        <div class="control">
-                            <input class="input" type="text" name="apellidoMaternoFamiliar_${contadorFamiliares}">
-                        </div>
-                    </div>
-                </div>
-                <div class="column is-half">
-                    <div class="field">
-                        <label class="label">Fecha Nacimiento</label>
-                        <div class="control">
-                            <input class="input" type="date" name="fechaNacimientoFamiliar_${contadorFamiliares}">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    const nuevoFamiliarHTML = generarBloqueFamiliar(contadorFamiliares);
 
     document.getElementById('familiares-adicionales').insertAdjacentHTML('beforeend', nuevoFamiliarHTML);
     mostrarMensaje(`Se ha agregado el familiar ${contadorFamiliares}`, "success");
@@ -1458,4 +1405,749 @@ function copiarDatosComoApoderado() {
         console.error("Error al copiar datos como apoderado:", error);
         mostrarToast('Ocurrió un error al copiar los datos. Por favor, inténtalo nuevamente.', 'is-danger');
     }
+}
+
+function agregarFamiliarAdicional(indice) {
+    const div = document.createElement('div');
+    div.className = 'box datos-familiar';
+    div.innerHTML = generarBloqueFamiliar(indice);
+    // Botón para eliminar este bloque
+    div.querySelector('.btn-eliminar-familiar').addEventListener('click', function () {
+        div.remove();
+    });
+    document.getElementById('familiares-adicionales').appendChild(div);
+}
+
+function generarBloqueFamiliar(indice = 1) {
+    return `
+        <div class="datos-familiar" id="familiar-${indice}">
+            <div class="header-section mt-5">DATOS FAMILIAR ${indice}</div>
+            <div class="columns">
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label required">Parentesco</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="parentesco_${indice}" required>
+                                    <option value="">** Seleccione **</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Madre">Madre</option>
+                                    <option value="Hermano/a">Hermano/a</option>
+                                    <option value="Abuelo/a">Abuelo/a</option>
+                                    <option value="Tío/a">Tío/a</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <div class="control">
+                            ${indice > 1 ? `<button type="button" class="button is-danger is-light btn-eliminar-familiar" onclick="eliminarFamiliar(${indice})">Eliminar</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="columns is-multiline">
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label required">RUT</label>
+                        <div class="control">
+                            <input class="input" type="text" name="rutFamiliar_${indice}" placeholder="Ej: 12.345.678-9" required>
+                            <label class="checkbox ml-2">
+                                <input type="checkbox" name="extranjeroSinRut_${indice}">
+                                Extranjero sin Rut
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Apoderado Suplente</label>
+                        <div class="control">
+                            <input type="checkbox" name="apoderadoSuplente_${indice}">
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label required">Nombres</label>
+                        <div class="control">
+                            <input class="input" type="text" name="nombresFamiliar_${indice}" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label required">Apellido Paterno</label>
+                        <div class="control">
+                            <input class="input" type="text" name="apellidoPaternoFamiliar_${indice}" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label required">Apellido Materno</label>
+                        <div class="control">
+                            <input class="input" type="text" name="apellidoMaternoFamiliar_${indice}" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Fecha Nacimiento</label>
+                        <div class="control">
+                            <input class="input" type="date" name="fechaNacimientoFamiliar_${indice}">
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Género</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="generoFamiliar_${indice}">
+                                    <option value="">Seleccione</option>
+                                    <option value="1">Masculino</option>
+                                    <option value="2">Femenino</option>
+                                    <option value="3">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Nombre Empresa</label>
+                        <div class="control">
+                            <input class="input" type="text" name="nombreEmpresa_${indice}">
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Dirección del Trabajo</label>
+                        <div class="control">
+                            <input class="input" type="text" name="direccionTrabajo_${indice}">
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Cargo en la Empresa</label>
+                        <div class="control">
+                            <input class="input" type="text" name="cargoEmpresa_${indice}">
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Teléfono</label>
+                        <div class="control">
+                            <input class="input" type="text" name="telefonoFamiliar_${indice}">
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="field">
+                        <label class="label">Teléfono del Trabajo</label>
+                        <div class="control">
+                            <input class="input" type="text" name="telefonoTrabajo_${indice}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function autocompletarApoderadoDesdeParentesco() {
+    try {
+        const tipoApoderadoSelect = document.getElementById('tipoApoderado');
+        const seleccion = tipoApoderadoSelect.value;
+        
+        console.log("Tipo de apoderado seleccionado:", seleccion);
+        if (!seleccion) return;
+        
+        // Mapeo de valores de texto a valores del parentesco en la base de datos
+        const mapaParentescos = {
+            "Padre": "1",
+            "Madre": "2",
+            "Abuelo/a": "3",
+            "Tío/a": "5",
+            "Otro": "6"
+        };
+        
+        const valorParentesco = mapaParentescos[seleccion];
+        console.log("Buscando familiar con parentesco valor:", valorParentesco);
+        
+        // Buscar el familiar con el parentesco correspondiente
+        const familiarSelect = document.querySelector('select[name="parentesco"]');
+        if (familiarSelect && (familiarSelect.value === valorParentesco || familiarSelect.value === seleccion)) {
+            // Copiar datos al apoderado
+            const nombresFamiliar = document.querySelector('input[name="nombresFamiliar"]').value || '';
+            const apellidoPaterno = document.querySelector('input[name="apellidoPaternoFamiliar"]').value || '';
+            const apellidoMaterno = document.querySelector('input[name="apellidoMaternoFamiliar"]').value || '';
+            const rutFamiliar = document.querySelector('input[name="rutFamiliar"]').value || '';
+            const esSinRut = document.querySelector('input[name="extranjeroSinRut"]')?.checked || false;
+            
+            // Asignar valores al apoderado
+            document.querySelector('input[name="nombresApoderado"]').value = nombresFamiliar;
+            document.querySelector('input[name="apellidoPaternoApoderado"]').value = apellidoPaterno;
+            document.querySelector('input[name="apellidoMaternoApoderado"]').value = apellidoMaterno;
+            document.querySelector('input[name="rutApoderado"]').value = rutFamiliar;
+            
+            // Checkbox de extranjero sin RUT
+            const apoderadoSinRut = document.querySelector('input[name="extranjeroSinRutApoderado"]');
+            if (apoderadoSinRut) apoderadoSinRut.checked = esSinRut;
+            
+            // Género
+            const generoFamiliar = document.querySelector('select[name="generoFamiliar"]')?.value;
+            if (generoFamiliar) {
+                const generoMasculino = document.querySelector('input[name="generoApoderado"][value="1"]');
+                const generoFemenino = document.querySelector('input[name="generoApoderado"][value="2"]');
+                
+                if (generoFamiliar === "1" && generoMasculino) generoMasculino.checked = true;
+                else if (generoFamiliar === "2" && generoFemenino) generoFemenino.checked = true;
+            }
+            
+            // Datos adicionales
+            document.querySelector('input[name="empresaApoderado"]').value = document.querySelector('input[name="nombreEmpresa"]')?.value || '';
+            document.querySelector('input[name="cargoApoderado"]').value = document.querySelector('input[name="cargoEmpresa"]')?.value || '';
+            document.querySelector('input[name="direccionTrabajoApoderado"]').value = document.querySelector('input[name="direccionTrabajo"]')?.value || '';
+            document.querySelector('input[name="telefonoTrabajoApoderado"]').value = document.querySelector('input[name="telefonoTrabajo"]')?.value || '';
+            document.querySelector('input[name="telefonoApoderado"]').value = document.querySelector('input[name="telefonoFamiliar2"]')?.value || '';
+            
+            // Mostrar mensaje de éxito
+            mostrarToast(`Datos del familiar (${seleccion}) copiados como apoderado`, 'is-success');
+        } else {
+            mostrarToast(`No se encontró un familiar con parentesco ${seleccion}`, 'is-warning');
+        }
+    } catch (error) {
+        console.error("Error al autocompletar apoderado:", error);
+        mostrarToast('Error al autocompletar los datos del apoderado', 'is-danger');
+    }
+}
+
+function cargarEstablecimientos() {
+    fetch('/obtener-establecimientos')
+        .then(response => response.json())
+        .then(establecimientos => {
+            const selectEstablecimiento = document.getElementById('idEstablecimientoAnterior');
+            if (selectEstablecimiento) {
+                selectEstablecimiento.innerHTML = '<option value="">Seleccione establecimiento</option>';
+                selectEstablecimiento.innerHTML += '<option value="-1">SIN INFORMACIÓN</option>';
+
+                establecimientos.forEach(est => {
+                    const option = document.createElement('option');
+                    option.value = est.id_establecimiento;
+                    option.textContent = `${est.nombre} ${est.rbd ? `(RBD: ${est.rbd})` : ''}`;
+                    selectEstablecimiento.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar establecimientos:', error);
+        });
+}
+
+function cargarComunas() {
+    fetch('/obtener-comunas')
+        .then(response => response.json())
+        .then(comunas => {
+            const comunaSelect = document.querySelector('select[name="idComuna"]');
+            const comunaApoderadoSelect = document.querySelector('select[name="idComunaApoderado"]');
+
+            if (comunaSelect) {
+                comunaSelect.innerHTML = '<option value="">Seleccione comuna</option>';
+                let regionesUnicas = [...new Set(comunas.map(c => c.region))].sort();
+
+                regionesUnicas.forEach(region => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = region;
+
+                    comunas.filter(c => c.region === region).forEach(comuna => {
+                        const option = document.createElement('option');
+                        option.value = comuna.id_comuna;
+                        option.textContent = comuna.comuna;
+                        optgroup.appendChild(option);
+                    });
+
+                    comunaSelect.appendChild(optgroup);
+                });
+            }
+
+            // También llenar el select de comunas del apoderado
+            if (comunaApoderadoSelect) {
+                comunaApoderadoSelect.innerHTML = comunaSelect ? comunaSelect.innerHTML : '<option value="">Seleccione comuna</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar comunas:', error);
+        });
+}
+
+function cargarNacionalidades() {
+    fetch('/obtener-nacionalidades')
+        .then(response => response.json())
+        .then(nacionalidades => {
+            const nacionalidadSelect = document.querySelector('select[name="idNacionalidad"]');
+            if (nacionalidadSelect) {
+                nacionalidadSelect.innerHTML = '<option value="">Seleccione nacionalidad</option>';
+
+                // Poner Chile primero si existe
+                const chileIndex = nacionalidades.findIndex(n => n.nacionalidad === 'Chilena');
+                if (chileIndex !== -1) {
+                    const chile = nacionalidades.splice(chileIndex, 1)[0];
+                    nacionalidades.unshift(chile);
+                }
+
+                nacionalidades.forEach(nac => {
+                    const option = document.createElement('option');
+                    option.value = nac.id_nacionalidad;
+                    option.textContent = nac.nacionalidad;
+                    nacionalidadSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar nacionalidades:', error);
+        });
+}
+
+function cargarMotivosPostulacion() {
+    // Usamos ruta correcta y manejo apropiado de errores
+    fetch('/obtener-motivos-postulacion')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(motivos => {
+            const motivoSelect = document.querySelector('select[name="motivoPostulacion"]');
+            if (motivoSelect) {
+                motivoSelect.innerHTML = '<option value="">*** SELECCIONE UNA OPCIÓN ***</option>';
+
+                // Verificamos que hay datos
+                if (motivos && Array.isArray(motivos) && motivos.length > 0) {
+                    motivos.forEach(motivo => {
+                        const option = document.createElement('option');
+                        option.value = motivo.id_motivo || motivo.id;
+                        option.textContent = motivo.descripcion || motivo.nombre;
+                        motivoSelect.appendChild(option);
+                    });
+                    console.log(`Cargados ${motivos.length} motivos de postulación`);
+                } else {
+                    console.warn("No se recibieron motivos de postulación o el formato es incorrecto");
+                    
+                    // Añadimos algunos valores por defecto
+                    const valoresPorDefecto = [
+                        {id: 1, nombre: "Recomendación familiar"},
+                        {id: 2, nombre: "Cercanía al domicilio"},
+                        {id: 3, nombre: "Proyecto educativo"},
+                        {id: 4, nombre: "Prestigio académico"},
+                        {id: 5, nombre: "Valores y formación"}
+                    ];
+                    
+                    valoresPorDefecto.forEach(motivo => {
+                        const option = document.createElement('option');
+                        option.value = motivo.id;
+                        option.textContent = motivo.nombre;
+                        motivoSelect.appendChild(option);
+                    });
+                }
+            } else {
+                console.warn("No se encontró el selector de motivo de postulación");
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar motivos de postulación:', error);
+            
+            // Si falla la carga, añadimos valores por defecto
+            const motivoSelect = document.querySelector('select[name="motivoPostulacion"]');
+            if (motivoSelect) {
+                motivoSelect.innerHTML = '<option value="">*** SELECCIONE UNA OPCIÓN ***</option>';
+                const valoresPorDefecto = [
+                    {id: 1, nombre: "Recomendación familiar"},
+                    {id: 2, nombre: "Cercanía al domicilio"},
+                    {id: 3, nombre: "Proyecto educativo"},
+                    {id: 4, nombre: "Prestigio académico"},
+                    {id: 5, nombre: "Valores y formación"}
+                ];
+                
+                valoresPorDefecto.forEach(motivo => {
+                    const option = document.createElement('option');
+                    option.value = motivo.id;
+                    option.textContent = motivo.nombre;
+                    motivoSelect.appendChild(option);
+                });
+            }
+        });
+}
+
+function cargarPlanesAcademicos() {
+    fetch('/obtener-planes')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(planes => {
+            const selectPlan = document.getElementById('plan');
+            if (selectPlan) {
+                selectPlan.innerHTML = '<option value="">Seleccione un plan</option>';
+
+                if (planes && planes.length > 0) {
+                    // Ordenar planes por nombre/descripción
+                    planes.sort((a, b) => {
+                        const textoA = a.nombre_plan || a.descripcion || '';
+                        const textoB = b.nombre_plan || b.descripcion || '';
+                        return textoA.localeCompare(textoB);
+                    });
+
+                    // Agregar todos los planes al select
+                    planes.forEach(plan => {
+                        const option = document.createElement('option');
+                        option.value = plan.id_plan;
+                        option.textContent = plan.nombre_plan || plan.descripcion;
+                        selectPlan.appendChild(option);
+                    });
+
+                    console.log(`Cargados ${planes.length} planes académicos`);
+                } else {
+                    console.warn("No se encontraron planes académicos");
+                }
+            } else {
+                console.error("No se encontró el elemento 'plan'");
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar planes académicos:', error);
+            const selectPlan = document.getElementById('plan');
+            if (selectPlan) {
+                selectPlan.innerHTML = '<option value="">Error al cargar planes</option>';
+            }
+        });
+}
+
+function cargarTodosLosCursos() {
+    // Intentar usar el año 2025 por defecto
+    fetch('/obtener-cursos?anio=2025')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(cursos => {
+            // Cambio de cursosSelect a idCurso
+            const cursosSelect = document.getElementById('idCurso');
+            if (cursosSelect) {
+                cursosSelect.innerHTML = '<option value="">-- Seleccione curso --</option>';
+
+                if (cursos && cursos.length > 0) {
+                    // Crear un array para agrupar por nivel
+                    const nivelesPorCurso = {};
+
+                    // Agrupar los cursos por nivel (extraer parte numérica)
+                    cursos.forEach(curso => {
+                        // Extraer el nivel básico (ej: "1° BÁSICO" de "1° BÁSICO A")
+                        const nivelMatch = curso.nombre_curso.match(/^([0-9]+[°º]?\s+[A-ZÁ-ÚÑ]+)/i);
+                        const nivel = nivelMatch ? nivelMatch[0] : curso.nombre_curso;
+
+                        // Agrupar por nivel
+                        if (!nivelesPorCurso[nivel]) {
+                            nivelesPorCurso[nivel] = [];
+                        }
+
+                        nivelesPorCurso[nivel].push(curso);
+                    });
+
+                    // Obtener niveles ordenados
+                    const niveles = Object.keys(nivelesPorCurso).sort((a, b) => {
+                        // Extraer números de niveles para ordenar correctamente
+                        const numA = parseInt(a.match(/\d+/) || [0]);
+                        const numB = parseInt(b.match(/\d+/) || [0]);
+
+                        return numA - numB;
+                    });
+
+                    // Crear optgroup para cada nivel
+                    niveles.forEach(nivel => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = nivel;
+
+                        // Agregar cada curso de este nivel
+                        nivelesPorCurso[nivel].forEach(curso => {
+                            const option = document.createElement('option');
+                            option.value = curso.id_curso;
+                            option.textContent = curso.nombre_curso;
+                            optgroup.appendChild(option);
+                        });
+
+                        cursosSelect.appendChild(optgroup);
+                    });
+
+                    console.log(`Cargados ${cursos.length} cursos agrupados por nivel`);
+                } else {
+                    console.warn("No se encontraron cursos");
+                }
+            } else {
+                // Mensaje de error actualizado
+                console.warn("No se encontró el elemento 'idCurso'");
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar cursos:', error);
+            // Si falla con el año 2025, intentar obtener todos los cursos
+            fetch('/obtener-cursos')
+                .then(response => response.json())
+                .then(cursos => {
+                    // También actualizar aquí idCurso
+                    const cursosSelect = document.getElementById('idCurso');
+                    if (cursosSelect && cursos.length > 0) {
+                        cursosSelect.innerHTML = '<option value="">-- Seleccione curso --</option>';
+                        cursos.forEach(curso => {
+                            const option = document.createElement('option');
+                            option.value = curso.id_curso;
+                            option.textContent = curso.nombre_curso;
+                            cursosSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(err => console.error('Error al obtener todos los cursos:', err));
+        });
+}
+
+function cargarAniosAcademicos() {
+    fetch('/obtener-anos')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            return response.json();
+        })
+        .then(anios => {
+            const aniosSelect = document.getElementById('idAno');
+            if (aniosSelect) {
+                aniosSelect.innerHTML = '<option value="">-- Seleccione año académico --</option>';
+
+                anios.forEach(anio => {
+                    const option = document.createElement('option');
+                    option.value = anio.id_ano;
+                    option.textContent = anio.nombre_ano;
+                    aniosSelect.appendChild(option);
+                });
+
+                // Después de cargar los años, precargar 2025 si está disponible
+                precargarAnio2025();
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar años académicos:', error);
+        });
+}
+
+function precargarAnio2025() {
+    const selectAnio = document.getElementById('idAno'); // CORREGIDO: anioIngreso -> idAno
+    if (!selectAnio || !selectAnio.options || selectAnio.options.length <= 1) {
+        console.error("Elemento 'idAno' no disponible o sin opciones"); // CORREGIDO: anioIngreso -> idAno
+        return;
+    }
+
+    // Buscar la opción que contiene "2025"
+    let encontrado = false;
+    for (let i = 0; i < selectAnio.options.length; i++) {
+        if (selectAnio.options[i].textContent.includes('2025')) {
+            selectAnio.selectedIndex = i;
+            encontrado = true;
+
+            // Disparar el evento change manualmente para cargar cursos
+            const event = new Event('change');
+            selectAnio.dispatchEvent(event);
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        console.warn("No se encontró el año 2025 en las opciones");
+    }
+}
+
+function validarDatosPersonales() {
+    // Validar campos obligatorios de datos personales
+    const camposObligatorios = [
+        {name: 'nombres', label: 'Nombres'},
+        {name: 'apellidoPaterno', label: 'Apellido Paterno'},
+        {name: 'apellidoMaterno', label: 'Apellido Materno'},
+        {name: 'idAno', label: 'Año de Ingreso'},
+        {name: 'idCurso', label: 'Curso'}
+    ];
+
+    for (const campo of camposObligatorios) {
+        const elemento = document.querySelector(`[name="${campo.name}"]`);
+        if (!elemento || !elemento.value.trim()) {
+            mostrarToast(`El campo ${campo.label} es obligatorio`, 'is-danger');
+            return false;
+        }
+    }
+
+    // Validar RUT (si no es extranjero sin RUT)
+    const sinRut = document.querySelector('input[name="sinRut"]')?.checked;
+    const rut = document.querySelector('input[name="rut"]')?.value;
+
+    if (!sinRut && (!rut || !isRut(rut.trim()))) {
+        mostrarToast('El RUT no es válido', 'is-danger');
+        return false;
+    }
+
+    return true;
+}
+
+function validarDatosApoderado() {
+    // Validar campos obligatorios del apoderado
+    const camposObligatorios = [
+        {name: 'nombresApoderado', label: 'Nombres del apoderado'},
+        {name: 'apellidoPaternoApoderado', label: 'Apellido Paterno del apoderado'},
+        {name: 'apellidoMaternoApoderado', label: 'Apellido Materno del apoderado'}
+    ];
+
+    for (const campo of camposObligatorios) {
+        const elemento = document.querySelector(`[name="${campo.name}"]`);
+        if (!elemento || !elemento.value.trim()) {
+            mostrarToast(`El campo ${campo.label} es obligatorio`, 'is-danger');
+            return false;
+        }
+    }
+
+    // Validar RUT del apoderado (si no está marcado como extranjero sin RUT)
+    const extranjeroSinRut = document.querySelector('input[name="extranjeroSinRutApoderado"]')?.checked;
+    const rutApoderado = document.querySelector('input[name="rutApoderado"]')?.value;
+    
+    if (!extranjeroSinRut && rutApoderado && !isRut(rutApoderado.trim())) {
+        mostrarToast('El RUT del apoderado no es válido', 'is-danger');
+        return false;
+    }
+
+    return true;
+}
+
+function cargarCursosPorAnio(idAno) {
+    // Primero obtener el nombre del año usando idAno
+    fetch(`/obtener-nombre-ano?id=${idAno}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.nombre_ano) {
+                return fetch(`/obtener-cursos?anio=${data.nombre_ano}`);
+            } else {
+                return fetch('/obtener-cursos'); // sin filtro por año si no hay nombre
+            }
+        })
+        .then(response => response.json())
+        .then(cursos => {
+            // Aquí va tu código para procesar los cursos
+            const selectCurso = document.getElementById('idCurso');
+            selectCurso.innerHTML = '<option value="">Seleccione un curso</option>';
+
+            cursos.forEach(curso => {
+                const option = document.createElement('option');
+                option.value = curso.id_curso;
+                option.textContent = curso.nombre_curso;
+                selectCurso.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error al cargar cursos:', error));
+}
+
+function copiarDatosComoApoderado() {
+    try {
+        console.log("Iniciando copia de datos como apoderado...");
+        
+        // Obtener valores con manejo seguro de errores
+        const getValueSafely = (selector) => {
+            const element = document.querySelector(selector);
+            if (!element) {
+                console.warn(`Elemento no encontrado: ${selector}`);
+                return '';
+            }
+            return element.value || '';
+        };
+        
+        const setValueSafely = (selector, value) => {
+            const element = document.querySelector(selector);
+            if (!element) {
+                console.warn(`Elemento destino no encontrado: ${selector}`);
+                return false;
+            }
+            element.value = value;
+            return true;
+        };
+        
+        // Obtener valores del formulario de alumno
+        const nombres = getValueSafely('input[name="nombres"]');
+        const apellidoPaterno = getValueSafely('input[name="apellidoPaterno"]');
+        const apellidoMaterno = getValueSafely('input[name="apellidoMaterno"]');
+        const rut = getValueSafely('input[name="rut"]');
+        const telefono = getValueSafely('input[name="telefono"]');
+        const email = getValueSafely('input[name="email"]');
+        
+        console.log("Datos obtenidos correctamente:", {
+            nombres, apellidoPaterno, apellidoMaterno, rut, telefono, email
+        });
+        
+        // Establecer valores en el formulario de apoderado
+        let exito = true;
+        exito &= setValueSafely('input[name="nombresApoderado"]', nombres);
+        exito &= setValueSafely('input[name="apellidoPaternoApoderado"]', apellidoPaterno);
+        exito &= setValueSafely('input[name="apellidoMaternoApoderado"]', apellidoMaterno);
+        exito &= setValueSafely('input[name="rutApoderado"]', rut);
+        exito &= setValueSafely('input[name="telefonoApoderado"]', telefono);
+        exito &= setValueSafely('input[name="emailApoderado"]', email);
+        
+        // Intentar obtener el género seleccionado
+        try {
+            const generoRadio = document.querySelector('input[name="genero"]:checked');
+            if (generoRadio) {
+                const generoValue = generoRadio.value;
+                const generoApoderadoRadio = document.querySelector(`input[name="generoApoderado"][value="${generoValue}"]`);
+                if (generoApoderadoRadio) {
+                    generoApoderadoRadio.checked = true;
+                }
+            }
+        } catch (error) {
+            console.warn("Error al copiar el género:", error);
+        }
+        
+        // Activar pestaña de apoderado
+        const tabApoderado = document.querySelector('[data-tab="datos-apoderado"]');
+        if (tabApoderado) {
+            tabApoderado.click();
+            console.log("Pestaña de apoderado activada mediante clic directo");
+        } else {
+            console.error("No se pudo encontrar la pestaña de apoderado");
+        }
+        
+        console.log("Datos copiados con " + (exito ? "éxito" : "algunos errores"));
+        
+        // Mostrar mensaje de confirmación
+        mostrarToast('Datos copiados del alumno al apoderado', 'is-success');
+        
+    } catch (error) {
+        console.error("Error al copiar datos como apoderado:", error);
+        mostrarToast('Ocurrió un error al copiar los datos. Por favor, inténtalo nuevamente.', 'is-danger');
+    }
+}
+
+function agregarFamiliarAdicional(indice) {
+    const div = document.createElement('div');
+    div.className = 'box datos-familiar';
+    div.innerHTML = generarBloqueFamiliar(indice);
+    // Botón para eliminar este bloque
+    div.querySelector('.btn-eliminar-familiar').addEventListener('click', function () {
+        div.remove();
+    });
+    document.getElementById('familiares-adicionales').appendChild(div);
 }

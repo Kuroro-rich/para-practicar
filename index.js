@@ -50,21 +50,21 @@ function toBooleanDB(value) {
 function handleTransaction(queries, res, successMessage, finalCallback = null) {
   db.beginTransaction(err => {
     if (err) return handleDatabaseError(err, res, "Error al iniciar transacción");
-    
+
     executeQueries(queries, 0, (error) => {
       if (error) {
         return db.rollback(() => {
           handleDatabaseError(error, res, "Error durante la transacción");
         });
       }
-      
+
       db.commit(err => {
         if (err) {
           return db.rollback(() => {
             handleDatabaseError(err, res, "Error al confirmar transacción");
           });
         }
-        
+
         if (finalCallback) {
           finalCallback();
         } else {
@@ -79,17 +79,17 @@ function handleTransaction(queries, res, successMessage, finalCallback = null) {
     if (index >= queries.length) {
       return callback(null);
     }
-    
+
     const query = queries[index];
-    
+
     db.query(query.sql, query.params, (err, results) => {
       if (err) return callback(err);
-      
+
       // Si hay un callback para esta consulta, ejecutarlo
       if (query.callback) {
         query.callback(results);
       }
-      
+
       // Procesar la siguiente consulta
       executeQueries(queries, index + 1, callback);
     });
@@ -194,11 +194,19 @@ app.get('/obtener-planes', (req, res) => {
   });
 });
 
+app.get('/obtener-parentescos', (req, res) => {
+  const query = "SELECT id_parentesco, nombre FROM parentesco ORDER BY prioridad";
+  db.query(query, (err, results) => {
+    if (err) return handleDatabaseError(err, res, "Error al obtener parentescos");
+    res.json(results);
+  });
+});
+
 app.get("/obtener-cursos", (req, res) => {
   const anio = req.query.anio;
   let query;
 
-  if(!anio){
+  if (!anio) {
     return res.status(200).json([]);
   }
 
@@ -232,7 +240,7 @@ app.get("/obtener-cursos", (req, res) => {
     return;
   }
   */
-  
+
   query = `
     SELECT 
           cu.id_curso,
@@ -258,7 +266,8 @@ app.get("/obtener-cursos", (req, res) => {
 app.get("/obtener-anos", (req, res) => {
   const query = "SELECT id_ano, nombre_ano FROM ano_establecimiento ORDER BY nombre_ano DESC";
   console.log(query);
-  db.query(query, (err, results) => { console.log (results);
+  db.query(query, (err, results) => {
+    console.log(results);
     if (err) return handleDatabaseError(err, res, "Error al obtener años académicos");
     const formattedResults = results.map(row => {
       return {
@@ -276,16 +285,16 @@ app.get("/obtener-nombre-ano", (req, res) => {
   if (!idAno) {
     return res.status(400).json({ error: "Falta el ID del año" });
   }
-  
+
   const query = "SELECT nombre_ano FROM ano_establecimiento WHERE id_ano = ?";
-  
+
   db.query(query, [idAno], (err, results) => {
     if (err) return handleDatabaseError(err, res, "Error al obtener nombre del año");
-    
+
     if (results.length === 0) {
       return res.json({ nombre_ano: null });
     }
-    
+
     res.json({ nombre_ano: results[0].nombre_ano });
   });
 });
@@ -436,7 +445,6 @@ app.get("/api/apoderado/:idUsuario", (req, res) => {
 
     const idApoderado = alumnoResults[0].id_apoderado;
 
-    // CORREGIDO: Ahora usa los nombres de columnas correctos
     const queryApoderado = `
       SELECT 
         a.id_apoderado AS idApoderado,
@@ -446,11 +454,17 @@ app.get("/api/apoderado/:idUsuario", (req, res) => {
         u.a_materno AS apellidoMaterno,
         u.telefono AS telefono,
         u.e_mail AS email,
+        u.sexo AS genero,
+        u.fecha_nacimiento AS fechaNacimiento,
+        u.direccion AS direccion,
+        u.direccion_nro AS numero,
+        u.direccion_villa AS villa,
+        u.direccion_depto AS departamento,
+        u.id_comuna AS idComuna,
         a.empresa AS empresa,
         a.cargo AS cargo,
         a.direccion_trabajo AS direccionTrabajo,
-        a.telefono_trabajo AS telefonoTrabajo,
-        u.fecha_nacimiento AS fechaNacimiento
+        a.telefono_trabajo AS telefonoTrabajo
       FROM apoderado a
       JOIN usuario u ON a.id_usuario = u.id_usuario
       WHERE a.id_usuario = ?
@@ -499,7 +513,10 @@ app.get("/api/familiares/:idUsuario", (req, res) => {
 
   db.query(query, [idUsuario], (err, results) => {
     if (err) return handleDatabaseError(err, res, "Error al obtener familiares");
-    res.json(results);
+    if (!results.length) {
+      return res.json({ success: false, message: "No se encontraron familiares" });
+    }
+    res.json({ success: true, familiares: results });
   });
 });
 
@@ -866,14 +883,15 @@ app.post("/crear-usuario", upload.none(), (req, res) => {
     apellidoMaterno,
     telefono,
     email,
-    calle,
-    villa,
-    numeroCasa,
-    departamento,
     comuna,
     genero,
-    nacionalidad
+    nacionalidad,
+    villa,
+    numeroCasa,
+    departamento
   } = req.body;
+
+  const calle = req.body.direccion; // o req.body.calle si tu frontend envía 'calle'
 
   // Incluir id_perfil_base en la consulta
   const query = `
@@ -987,6 +1005,7 @@ app.post("/guardar-apoderado", upload.none(), (req, res) => {
         idUsuarioApoderado
       ];
 
+      console.log('Actualizando usuario apoderado:', valoresActualizarUsuario);
       db.query(queryActualizarUsuario, valoresActualizarUsuario, (err) => {
         if (err) return handleDatabaseError(err, res, "Error al actualizar datos del apoderado");
 
@@ -1038,52 +1057,52 @@ app.post("/guardar-apoderado", upload.none(), (req, res) => {
           } else {
             // Si no existe, lo creamos
             // 1. Obtener el próximo id_apoderado disponible
-            db.query('SELECT IFNULL(MAX(id_apoderado), 0) + 1 AS nuevoId FROM apoderado', function(err, result) {
-                if (err) {
-                    return db.rollback(function() {
-                        console.error('Error al obtener nuevo id_apoderado:', err);
-                        res.status(500).json({ success: false, message: 'Error al obtener nuevo id_apoderado' });
-                    });
-                }
-                const nuevoId = result[0].nuevoId;
+            db.query('SELECT IFNULL(MAX(id_apoderado), 0) + 1 AS nuevoId FROM apoderado', function (err, result) {
+              if (err) {
+                return db.rollback(function () {
+                  console.error('Error al obtener nuevo id_apoderado:', err);
+                  res.status(500).json({ success: false, message: 'Error al obtener nuevo id_apoderado' });
+                });
+              }
+              const nuevoId = result[0].nuevoId;
 
-                // 2. Ahora sí, haz el INSERT incluyendo id_apoderado
-                const queryApoderado = `
+              // 2. Ahora sí, haz el INSERT incluyendo id_apoderado
+              const queryApoderado = `
                     INSERT INTO apoderado (
                         id_apoderado, id_usuario, empresa, cargo, direccion_trabajo, telefono_trabajo
                     ) VALUES (?, ?, ?, ?, ?, ?)
                 `;
-                const valoresApoderado = [
-                    nuevoId,
-                    idUsuarioApoderado,
-                    apoderado.empresaApoderado || '',
-                    apoderado.cargoApoderado || '',
-                    apoderado.direccionTrabajoApoderado || '',
-                    apoderado.telefonoTrabajoApoderado || ''
-                ];
+              const valoresApoderado = [
+                nuevoId,
+                idUsuarioApoderado,
+                apoderado.empresaApoderado || '',
+                apoderado.cargoApoderado || '',
+                apoderado.direccionTrabajoApoderado || '',
+                apoderado.telefonoTrabajoApoderado || ''
+              ];
 
-                db.query(queryApoderado, valoresApoderado, function(err, resultApoderado) {
-                    if (err) {
-                        return db.rollback(function() {
-                            console.error('Error al crear apoderado:', err);
-                            res.status(500).json({ success: false, message: 'Error al crear apoderado' });
-                        });
-                    }
-                    const idApoderado = nuevoId;
+              db.query(queryApoderado, valoresApoderado, function (err, resultApoderado) {
+                if (err) {
+                  return db.rollback(function () {
+                    console.error('Error al crear apoderado:', err);
+                    res.status(500).json({ success: false, message: 'Error al crear apoderado' });
+                  });
+                }
+                const idApoderado = nuevoId;
 
-                    // Actualizar la referencia en la tabla alumno
-                    const queryActualizarAlumno = "UPDATE alumno SET id_apoderado = ? WHERE id_usuario = ?";
+                // Actualizar la referencia en la tabla alumno
+                const queryActualizarAlumno = "UPDATE alumno SET id_apoderado = ? WHERE id_usuario = ?";
 
-                    db.query(queryActualizarAlumno, [idApoderado, idUsuarioAlumno], (err) => {
-                      if (err) return handleDatabaseError(err, res, "Error al actualizar referencia del apoderado");
+                db.query(queryActualizarAlumno, [idApoderado, idUsuarioAlumno], (err) => {
+                  if (err) return handleDatabaseError(err, res, "Error al actualizar referencia del apoderado");
 
-                      res.json({
-                        success: true,
-                        message: "Apoderado creado correctamente",
-                        idApoderado: idApoderado
-                      });
-                    });
+                  res.json({
+                    success: true,
+                    message: "Apoderado creado correctamente",
+                    idApoderado: idApoderado
+                  });
                 });
+              });
             });
           }
         });
@@ -1229,6 +1248,7 @@ app.post("/guardar-familiar", upload.none(), (req, res) => {
         idFamiliar
       ];
 
+      console.log('Valores para guardar familiar:', valores);
       db.query(query, valores, (err) => {
         if (err) return handleDatabaseError(err, res, "Error al actualizar familiar");
 
@@ -1373,127 +1393,127 @@ app.get('/exportar-excel', (req, res) => {
 
 // Endpoint para guardar registro completo
 app.post('/guardar-registro-completo', async (req, res) => {
-    try {
-        const { alumno, familiares, apoderado } = req.body;
+  try {
+    const { alumno, familiares, apoderado } = req.body;
 
-        if (!alumno || !apoderado) {
-            return res.status(400).json({
-                success: false,
-                message: 'Datos incompletos. Se requieren datos del alumno y apoderado.'
-            });
-        }
+    if (!alumno || !apoderado) {
+      return res.status(400).json({
+        success: false,
+        message: 'Datos incompletos. Se requieren datos del alumno y apoderado.'
+      });
+    }
 
-        db.beginTransaction(async function(err) {
-            if (err) {
-                console.error('Error al iniciar transacción:', err);
-                return res.status(500).json({
-                    success: false,
-                    message: 'Error al iniciar la transacción en la base de datos'
-                });
-            }
+    db.beginTransaction(async function (err) {
+      if (err) {
+        console.error('Error al iniciar transacción:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Error al iniciar la transacción en la base de datos'
+        });
+      }
 
-            try {
-                // 1. Crear usuario del apoderado
-                const queryUsuarioApoderado = `
+      try {
+        // 1. Crear usuario del apoderado
+        const queryUsuarioApoderado = `
                     INSERT INTO usuario (
                         rut, nombres, a_paterno, a_materno, sexo, 
                         fecha_nacimiento, direccion, direccion_villa, direccion_nro, direccion_depto,
                         id_comuna, telefono, e_mail, id_perfil_base
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 3)
                 `;
-                const valoresUsuarioApoderado = [
-                    apoderado.rutApoderado || 'SIN RUT',
-                    apoderado.nombresApoderado.toUpperCase(),
-                    apoderado.apellidoPaternoApoderado.toUpperCase(),
-                    (apoderado.apellidoMaternoApoderado || '').toUpperCase(),
-                    apoderado.generoApoderado || '1',
-                    apoderado.fechaNacimientoApoderado || null,
-                    apoderado.direccionApoderado || '',
-                    apoderado.villaApoderado || '',
-                    apoderado.numeroApoderado || '',
-                    apoderado.departamentoApoderado || '',
-                    apoderado.idComunaApoderado || null,
-                    apoderado.telefonoApoderado || '',
-                    apoderado.emailApoderado || '',
-                ];
+        const valoresUsuarioApoderado = [
+          apoderado.rutApoderado || 'SIN RUT',
+          apoderado.nombresApoderado.toUpperCase(),
+          apoderado.apellidoPaternoApoderado.toUpperCase(),
+          (apoderado.apellidoMaternoApoderado || '').toUpperCase(),
+          apoderado.generoApoderado || '1',
+          apoderado.fechaNacimientoApoderado || null,
+          apoderado.direccionApoderado || '',
+          apoderado.villaApoderado || '',
+          apoderado.numeroApoderado || '',
+          apoderado.departamentoApoderado || '',
+          apoderado.idComunaApoderado || null,
+          apoderado.telefonoApoderado || '',
+          apoderado.emailApoderado || '',
+        ];
 
-                db.query(queryUsuarioApoderado, valoresUsuarioApoderado, function(err, resultUsuarioApoderado) {
-                    if (err) {
-                        return db.rollback(function() {
-                            console.error('Error al crear usuario del apoderado:', err);
-                            res.status(500).json({ success: false, message: 'Error al crear usuario del apoderado' });
-                        });
-                    }
-                    const idUsuarioApoderado = resultUsuarioApoderado.insertId;
+        db.query(queryUsuarioApoderado, valoresUsuarioApoderado, function (err, resultUsuarioApoderado) {
+          if (err) {
+            return db.rollback(function () {
+              console.error('Error al crear usuario del apoderado:', err);
+              res.status(500).json({ success: false, message: 'Error al crear usuario del apoderado' });
+            });
+          }
+          const idUsuarioApoderado = resultUsuarioApoderado.insertId;
 
-                    // 2. Crear apoderado
-                    db.query('SELECT IFNULL(MAX(id_apoderado), 0) + 1 AS nuevoId FROM apoderado', function(err, result) {
-                        if (err) {
-                            return db.rollback(function() {
-                                console.error('Error al obtener nuevo id_apoderado:', err);
-                                res.status(500).json({ success: false, message: 'Error al obtener nuevo id_apoderado' });
-                            });
-                        }
-                        const nuevoId = result[0].nuevoId;
+          // 2. Crear apoderado
+          db.query('SELECT IFNULL(MAX(id_apoderado), 0) + 1 AS nuevoId FROM apoderado', function (err, result) {
+            if (err) {
+              return db.rollback(function () {
+                console.error('Error al obtener nuevo id_apoderado:', err);
+                res.status(500).json({ success: false, message: 'Error al obtener nuevo id_apoderado' });
+              });
+            }
+            const nuevoId = result[0].nuevoId;
 
-                        const queryApoderado = `
+            const queryApoderado = `
                             INSERT INTO apoderado (
                                 id_apoderado, id_usuario, empresa, cargo, direccion_trabajo, telefono_trabajo
                             ) VALUES (?, ?, ?, ?, ?, ?)
                         `;
-                        const valoresApoderado = [
-                            nuevoId,
-                            idUsuarioApoderado,
-                            apoderado.empresaApoderado || '',
-                            apoderado.cargoApoderado || '',
-                            apoderado.direccionTrabajoApoderado || '',
-                            apoderado.telefonoTrabajoApoderado || ''
-                        ];
+            const valoresApoderado = [
+              nuevoId,
+              idUsuarioApoderado,
+              apoderado.empresaApoderado || '',
+              apoderado.cargoApoderado || '',
+              apoderado.direccionTrabajoApoderado || '',
+              apoderado.telefonoTrabajoApoderado || ''
+            ];
 
-                        db.query(queryApoderado, valoresApoderado, function(err, resultApoderado) {
-                            if (err) {
-                                return db.rollback(function() {
-                                    console.error('Error al crear apoderado:', err);
-                                    res.status(500).json({ success: false, message: 'Error al crear apoderado' });
-                                });
-                            }
-                            const idApoderado = nuevoId;
+            db.query(queryApoderado, valoresApoderado, function (err, resultApoderado) {
+              if (err) {
+                return db.rollback(function () {
+                  console.error('Error al crear apoderado:', err);
+                  res.status(500).json({ success: false, message: 'Error al crear apoderado' });
+                });
+              }
+              const idApoderado = nuevoId;
 
-                            // 3. Crear usuario del alumno
-                            const queryUsuarioAlumno = `
+              // 3. Crear usuario del alumno
+              const queryUsuarioAlumno = `
                                 INSERT INTO usuario (
                                     rut, nombres, a_paterno, a_materno, sexo, 
                                     fecha_nacimiento, direccion, direccion_villa, direccion_nro, direccion_depto,
                                     id_comuna, telefono, e_mail, id_perfil_base
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 2)
                             `;
-                            const valoresUsuarioAlumno = [
-                                alumno.rut || 'SIN RUT',
-                                alumno.nombres.toUpperCase(),
-                                alumno.apellidoPaterno.toUpperCase(),
-                                (alumno.apellidoMaterno || '').toUpperCase(),
-                                alumno.genero || '1',
-                                alumno.fechaNacimiento || null,
-                                alumno.direccion || '',
-                                alumno.villa || '',
-                                alumno.numero || '',
-                                alumno.departamento || '',
-                                alumno.idComuna || null,
-                                alumno.telefono || '',
-                                alumno.email || '',
-                            ];
+              const valoresUsuarioAlumno = [
+                alumno.rut || 'SIN RUT',
+                alumno.nombres.toUpperCase(),
+                alumno.apellidoPaterno.toUpperCase(),
+                (alumno.apellidoMaterno || '').toUpperCase(),
+                alumno.genero || '1',
+                alumno.fechaNacimiento || null,
+                alumno.direccion || '',
+                alumno.villa || '',
+                alumno.numero || '',
+                alumno.departamento || '',
+                alumno.idComuna || null,
+                alumno.telefono || '',
+                alumno.email || '',
+              ];
 
-                            db.query(queryUsuarioAlumno, valoresUsuarioAlumno, function(err, resultUsuarioAlumno) {
-                                if (err) {
-                                    return db.rollback(function() {
-                                        console.error('Error al crear usuario del alumno:', err);
-                                        res.status(500).json({ success: false, message: 'Error al crear usuario del alumno' });
-                                    });
-                                }
-                                const idUsuarioAlumno = resultUsuarioAlumno.insertId;
+              db.query(queryUsuarioAlumno, valoresUsuarioAlumno, function (err, resultUsuarioAlumno) {
+                if (err) {
+                  return db.rollback(function () {
+                    console.error('Error al crear usuario del alumno:', err);
+                    res.status(500).json({ success: false, message: 'Error al crear usuario del alumno' });
+                  });
+                }
+                const idUsuarioAlumno = resultUsuarioAlumno.insertId;
 
-                                // 4. Crear alumno
-                                const queryAlumno = `
+                // 4. Crear alumno
+                const queryAlumno = `
                                     INSERT INTO alumno (
                                         id_usuario, id_apoderado, id_ano, id_plan, promedio_anterior, 
                                         id_estabAnterior, origen_indigena, realizo_pie, educ_fisica, alergico, 
@@ -1503,97 +1523,117 @@ app.post('/guardar-registro-completo', async (req, res) => {
                                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                 `;
 
-                                const valoresAlumno = [
-                                    idUsuarioAlumno,
-                                    idApoderado,
-                                    alumno.idAno || null,
-                                    alumno.idPlan || null,
-                                    alumno.promedioAnterior !== undefined && alumno.promedioAnterior !== '' ? alumno.promedioAnterior : null,
-                                    alumno.idEstablecimientoAnterior || null,
-                                    alumno.origenIndigena === 'Si' ? 1 : 0,
-                                    alumno.programaPIE === 'Si' ? 1 : 0,
-                                    alumno.realizaEducacionFisica === 'Si' ? 1 : 0,
-                                    alumno.alergicoMedicamento === 'Si' ? 1 : 0,
-                                    alumno.enfermedadActual || '',
-                                    alumno.medicamentoConsumo || '',
-                                    alumno.certificadoNacimiento === 'Si' ? 1 : 0,
-                                    alumno.informePersonalidad === 'Si' ? 1 : 0,
-                                    alumno.informeNotas === 'Si' ? 1 : 0,
-                                    alumno.certificadoEstudios === 'Si' ? 1 : 0,
-                                    alumno.fichaFirmada === 'Si' ? 1 : 0,
-                                    alumno.observaciones || '',
-                                    idUsuarioApoderado // <-- este es el usuario que inscribe (apoderado)
-                                ];
+                const valoresAlumno = [
+                  idUsuarioAlumno,
+                  idApoderado,
+                  alumno.idAno || null,
+                  alumno.idPlan || null,
+                  alumno.promedioAnterior !== undefined && alumno.promedioAnterior !== '' ? alumno.promedioAnterior : null,
+                  alumno.idEstablecimientoAnterior || null,
+                  alumno.origenIndigena === 'Si' ? 1 : 0,
+                  alumno.programaPIE === 'Si' ? 1 : 0,
+                  alumno.realizaEducacionFisica === 'Si' ? 1 : 0,
+                  alumno.alergicoMedicamento === 'Si' ? 1 : 0,
+                  alumno.enfermedadActual || '',
+                  alumno.medicamentoConsumo || '',
+                  alumno.certificadoNacimiento === 'Si' ? 1 : 0,
+                  alumno.informePersonalidad === 'Si' ? 1 : 0,
+                  alumno.informeNotas === 'Si' ? 1 : 0,
+                  alumno.certificadoEstudios === 'Si' ? 1 : 0,
+                  alumno.fichaFirmada === 'Si' ? 1 : 0,
+                  alumno.observaciones || '',
+                  idUsuarioApoderado // <-- este es el usuario que inscribe (apoderado)
+                ];
 
-                                db.query(queryAlumno, valoresAlumno, function(err, resultAlumno) {
-                                    if (err) {
-                                        return db.rollback(function() {
-                                            console.error('Error al crear alumno:', err);
-                                            res.status(500).json({ success: false, message: 'Error al crear alumno' });
-                                        });
-                                    }
-
-                                    db.commit(function(err) {
-                                        if (err) {
-                                            return db.rollback(function() {
-                                                console.error('Error al confirmar la transacción:', err);
-                                                res.status(500).json({ success: false, message: 'Error al confirmar la transacción' });
-                                            });
-                                        }
-                                        res.json({
-                                            success: true,
-                                            message: "Registro completo guardado correctamente",
-                                            idAlumno: idUsuarioAlumno,
-                                            idApoderado: idApoderado
-                                        });
-                                    });
-                                });
-                            });
-                        });
+                db.query(queryAlumno, valoresAlumno, function (err, resultAlumno) {
+                  if (err) {
+                    return db.rollback(function () {
+                      console.error('Error al crear alumno:', err);
+                      res.status(500).json({ success: false, message: 'Error al crear alumno' });
                     });
+                  }
+
+                  const queryAlumnoAno = `
+                    INSERT INTO alumno_ano (id_usuario, id_curso, id_ano)
+                    VALUES (?, ?, ?)
+                  `;
+                  const valoresAlumnoAno = [
+                    idUsuarioAlumno,
+                    alumno.idCurso, // asegúrate que el frontend envía este campo
+                    alumno.idAno
+                  ];
+
+                  db.query(queryAlumnoAno, valoresAlumnoAno, function (err, resultAlumnoAno) {
+                    if (err) {
+                      return db.rollback(function () {
+                        console.error('Error al crear alumno_ano:', err);
+                        res.status(500).json({ success: false, message: 'Error al crear alumno_ano' });
+                      });
+                    }
+
+                    // Ahora sí, haz el commit y responde
+                    db.commit(function (err) {
+                      if (err) {
+                        return db.rollback(function () {
+                          console.error('Error al confirmar la transacción:', err);
+                          res.status(500).json({ success: false, message: 'Error al confirmar la transacción' });
+                        });
+                      }
+                      res.json({
+                        success: true,
+                        message: "Registro completo guardado correctamente",
+                        idAlumno: idUsuarioAlumno,
+                        idApoderado: idApoderado
+                      });
+                    });
+                  });
                 });
-            } catch (error) {
-                db.rollback(function() {
-                    console.error('Error en la transacción:', error);
-                    res.status(500).json({ success: false, message: 'Error en la transacción' });
-                });
-            }
+              });
+            });
+          });
         });
-    } catch (error) {
-        console.error('Error general al procesar la solicitud:', error);
-        res.status(500).json({ success: false, message: 'Error al procesar la solicitud' });
-    }
+      } catch (error) {
+        db.rollback(function () {
+          console.error('Error en la transacción:', error);
+          res.status(500).json({ success: false, message: 'Error en la transacción' });
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error general al procesar la solicitud:', error);
+    res.status(500).json({ success: false, message: 'Error al procesar la solicitud' });
+  }
 });
 
 // Reemplaza tu ruta actual por esta:
 app.get('/obtener-motivos-postulacion', (req, res) => {
-    // Obtener valores únicos de motivos de inscripción existentes en el sistema
-    if (db) {
-        db.query('SELECT DISTINCT motivo_inscripcion AS id_motivo, motivo_inscripcion AS descripcion FROM alumno WHERE motivo_inscripcion IS NOT NULL ORDER BY motivo_inscripcion', (err, results) => {
-            if (err || results.length === 0) {
-                console.log("Usando valores predeterminados para motivos de inscripción");
-                // Si hay error o no hay resultados, devolver valores por defecto
-                return res.json([
-                    {id_motivo: 1, descripcion: "Recomendación familiar"},
-                    {id_motivo: 2, descripcion: "Cercanía al domicilio"},
-                    {id_motivo: 3, descripcion: "Proyecto educativo"},
-                    {id_motivo: 4, descripcion: "Prestigio académico"},
-                    {id_motivo: 5, descripcion: "Valores y formación"}
-                ]);
-            }
-            
-            return res.json(results);
-        });
-    } else {
-        // Si no hay conexión a base de datos, devolver valores por defecto
-        res.json([
-            {id_motivo: 1, descripcion: "Recomendación familiar"},
-            {id_motivo: 2, descripcion: "Cercanía al domicilio"},
-            {id_motivo: 3, descripcion: "Proyecto educativo"},
-            {id_motivo: 4, descripcion: "Prestigio académico"},
-            {id_motivo: 5, descripcion: "Valores y formación"}
+  // Obtener valores únicos de motivos de inscripción existentes en el sistema
+  if (db) {
+    db.query('SELECT DISTINCT motivo_inscripcion AS id_motivo, motivo_inscripcion AS descripcion FROM alumno WHERE motivo_inscripcion IS NOT NULL ORDER BY motivo_inscripcion', (err, results) => {
+      if (err || results.length === 0) {
+        console.log("Usando valores predeterminados para motivos de inscripción");
+        // Si hay error o no hay resultados, devolver valores por defecto
+        return res.json([
+          { id_motivo: 1, descripcion: "Recomendación familiar" },
+          { id_motivo: 2, descripcion: "Cercanía al domicilio" },
+          { id_motivo: 3, descripcion: "Proyecto educativo" },
+          { id_motivo: 4, descripcion: "Prestigio académico" },
+          { id_motivo: 5, descripcion: "Valores y formación" }
         ]);
-    }
+      }
+
+      return res.json(results);
+    });
+  } else {
+    // Si no hay conexión a base de datos, devolver valores por defecto
+    res.json([
+      { id_motivo: 1, descripcion: "Recomendación familiar" },
+      { id_motivo: 2, descripcion: "Cercanía al domicilio" },
+      { id_motivo: 3, descripcion: "Proyecto educativo" },
+      { id_motivo: 4, descripcion: "Prestigio académico" },
+      { id_motivo: 5, descripcion: "Valores y formación" }
+    ]);
+  }
 });
 
 // Iniciar el servidor

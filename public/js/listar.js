@@ -262,10 +262,6 @@ function displayResults() {
           <span class="icon"><i class="fas fa-edit"></i></span>
           <span>Editar</span>
         </a>
-        <a href="/detalle?id=${alumno.idUsuario}" class="button is-info">
-          <span class="icon"><i class="fas fa-eye"></i></span>
-          <span>Ver</span>
-        </a>
       </td>
     `;
     usuariosTable.appendChild(row);
